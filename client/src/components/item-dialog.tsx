@@ -133,27 +133,44 @@ export function ItemDialog({ item, trigger, open, onOpenChange }: ItemDialogProp
     form.setValue("category", e.target.value);
   };
 
+  const resizeImage = (file: File, maxSize = 900, quality = 0.8): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = reject;
+      reader.onload = (ev) => {
+        const img = new Image();
+        img.onerror = reject;
+        img.onload = () => {
+          let { width, height } = img;
+          if (width > maxSize || height > maxSize) {
+            if (width > height) {
+              height = Math.round((height * maxSize) / width);
+              width = maxSize;
+            } else {
+              width = Math.round((width * maxSize) / height);
+              height = maxSize;
+            }
+          }
+          const canvas = document.createElement("canvas");
+          canvas.width = width;
+          canvas.height = height;
+          canvas.getContext("2d")!.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL("image/jpeg", quality));
+        };
+        img.src = ev.target!.result as string;
+      };
+      reader.readAsDataURL(file);
+    });
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     setIsUploading(true);
     try {
-      const formData = new FormData();
-      formData.append("image", file);
-
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-        credentials: "include",
-      });
-
-      if (!res.ok) throw new Error("Upload failed");
-
-      const data = await res.json();
-      form.setValue("imageUrl", data.imageUrl);
+      const dataUrl = await resizeImage(file);
+      form.setValue("imageUrl", dataUrl);
     } catch (error) {
-      console.error("Upload error:", error);
+      console.error("Image processing error:", error);
     } finally {
       setIsUploading(false);
     }
@@ -341,7 +358,7 @@ export function ItemDialog({ item, trigger, open, onOpenChange }: ItemDialogProp
                   type="file"
                   ref={fileInputRef}
                   onChange={handleFileChange}
-                  accept="image/*"
+                  accept="image/*,image/heic,image/heif"
                   className="hidden"
                 />
               </div>
