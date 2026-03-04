@@ -212,8 +212,8 @@ function StoreTabs({
               <span className={cn(
                 "text-xs font-bold rounded-full min-w-[20px] h-5 px-1 flex items-center justify-center",
                 isActive
-                  ? "bg-white/25 text-white"
-                  : "bg-primary/12 text-primary"
+                  ? "bg-black/20 text-primary-foreground"
+                  : "bg-primary/15 text-primary"
               )}
                 data-testid={`tab-count-${store.id}`}>
                 {store.itemCount}

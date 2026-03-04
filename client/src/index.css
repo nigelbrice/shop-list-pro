@@ -9,66 +9,66 @@
     --font-sans: 'DM Sans', sans-serif;
     --font-display: 'Outfit', sans-serif;
 
-    /* Clean Minimal Monochrome Palette */
-    --background: 0 0% 98%;
-    --foreground: 240 5% 10%;
-    
-    --card: 0 0% 100%;
-    --card-foreground: 240 5% 10%;
-    
-    --popover: 0 0% 100%;
-    --popover-foreground: 240 5% 10%;
-    
-    --primary: 240 5.9% 10%;
-    --primary-foreground: 0 0% 98%;
-    
-    --secondary: 240 4.8% 95.9%;
-    --secondary-foreground: 240 5.9% 10%;
-    
-    --muted: 240 4.8% 95.9%;
-    --muted-foreground: 240 3.8% 46.1%;
-    
-    --accent: 240 4.8% 95.9%;
-    --accent-foreground: 240 5.9% 10%;
-    
-    --destructive: 0 84.2% 60.2%;
+    /* Dark dashboard palette — extracted from design reference */
+    --background: 158 12% 10%;
+    --foreground: 0 0% 95%;
+
+    --card: 158 10% 14%;
+    --card-foreground: 0 0% 95%;
+
+    --popover: 158 10% 14%;
+    --popover-foreground: 0 0% 95%;
+
+    --primary: 83 60% 72%;
+    --primary-foreground: 158 30% 10%;
+
+    --secondary: 158 10% 19%;
+    --secondary-foreground: 0 0% 88%;
+
+    --muted: 158 8% 17%;
+    --muted-foreground: 158 6% 52%;
+
+    --accent: 152 35% 43%;
+    --accent-foreground: 0 0% 98%;
+
+    --destructive: 0 62% 42%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 240 5.9% 90%;
-    --input: 240 5.9% 90%;
-    --ring: 240 5.9% 10%;
+    --border: 158 8% 21%;
+    --input: 158 8% 19%;
+    --ring: 83 60% 72%;
 
     --radius: 0.75rem;
   }
 
   .dark {
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
-    
-    --card: 240 10% 3.9%;
-    --card-foreground: 0 0% 98%;
-    
-    --popover: 240 10% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    
-    --primary: 0 0% 98%;
-    --primary-foreground: 240 5.9% 10%;
-    
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
-    
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 240 5% 64.9%;
-    
-    --accent: 240 3.7% 15.9%;
+    --background: 158 12% 10%;
+    --foreground: 0 0% 95%;
+
+    --card: 158 10% 14%;
+    --card-foreground: 0 0% 95%;
+
+    --popover: 158 10% 14%;
+    --popover-foreground: 0 0% 95%;
+
+    --primary: 83 60% 72%;
+    --primary-foreground: 158 30% 10%;
+
+    --secondary: 158 10% 19%;
+    --secondary-foreground: 0 0% 88%;
+
+    --muted: 158 8% 17%;
+    --muted-foreground: 158 6% 52%;
+
+    --accent: 152 35% 43%;
     --accent-foreground: 0 0% 98%;
-    
-    --destructive: 0 62.8% 30.6%;
+
+    --destructive: 0 62% 42%;
     --destructive-foreground: 0 0% 98%;
-    
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --ring: 240 4.9% 83.9%;
+
+    --border: 158 8% 21%;
+    --input: 158 8% 19%;
+    --ring: 83 60% 72%;
   }
 }
 
@@ -77,7 +77,7 @@
     @apply border-border;
   }
   body {
-    @apply bg-background text-foreground antialiased selection:bg-primary/10;
+    @apply bg-background text-foreground antialiased selection:bg-primary/20;
     font-family: var(--font-sans);
   }
   h1, h2, h3, h4, h5, h6 {
@@ -85,10 +85,9 @@
   }
 }
 
-/* Subtle interactions for clean aesthetic */
 @layer utilities {
   .hover-lift {
-    @apply transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-lg hover:shadow-black/5;
+    @apply transition-all duration-300 ease-out hover:-translate-y-1 hover:shadow-lg hover:shadow-black/20;
   }
   .focus-ring {
     @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
