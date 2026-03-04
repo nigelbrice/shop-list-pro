@@ -91,7 +91,7 @@ export function ItemCard({ item }: ItemCardProps) {
           </DropdownMenu>
         </div>
 
-        <div className="w-full aspect-[4/3] bg-secondary/30 flex items-center justify-center overflow-hidden shrink-0">
+        <div className="w-full aspect-[4/1] bg-secondary/30 flex items-center justify-center overflow-hidden shrink-0">
           {item.imageUrl && !imageError ? (
             <img
               src={item.imageUrl}
