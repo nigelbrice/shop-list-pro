@@ -1,8 +1,8 @@
-# CartMinimal - Replit.md
+# Shopeeze - Replit.md
 
 ## Overview
 
-CartMinimal is a minimalist grocery/shopping list management app with account-based authentication. It has two main views:
+Shopeeze is a minimalist grocery/shopping list management app with account-based authentication. It has two main views:
 
 1. **Item Database** - A searchable, sortable catalog of all items (name, category, notes, image, quantity)
 2. **Shopping List** - Per-store shopping lists with drag-and-drop reordering and pill-style store tabs

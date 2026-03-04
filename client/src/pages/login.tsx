@@ -46,7 +46,7 @@ export default function Login({ onSuccess }: { onSuccess: () => void }) {
             <ListChecks className="w-9 h-9" />
           </div>
           <h1 className="text-4xl font-bold font-display text-foreground">
-            Cart<span className="text-muted-foreground font-normal">Minimal</span>
+            Shope<span className="text-muted-foreground font-normal">eze</span>
           </h1>
           <p className="text-muted-foreground text-base">
             {tab === "login" ? "Sign in to your account" : "Create a new account"}
@@ -163,7 +163,7 @@ export default function Login({ onSuccess }: { onSuccess: () => void }) {
         </div>
 
         <p className="text-center text-xs text-muted-foreground">
-          If you were using CartMinimal before login was added, sign in with account name{" "}
+          If you were using Shopeeze before login was added, sign in with account name{" "}
           <strong>Demo</strong> and password <strong>demo123</strong>.
         </p>
       </div>

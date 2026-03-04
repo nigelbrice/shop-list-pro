@@ -176,7 +176,7 @@ export function Layout({ children, auth }: { children: React.ReactNode; auth: Au
               <ListChecks className="w-5 h-5" />
             </div>
             <h1 className="text-xl font-bold tracking-tight text-foreground font-display">
-              Cart<span className="text-muted-foreground font-normal">Minimal</span>
+              Shope<span className="text-muted-foreground font-normal">eze</span>
             </h1>
           </div>
 
