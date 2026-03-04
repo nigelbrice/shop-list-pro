@@ -210,27 +210,42 @@ export default function ShoppingList() {
   const [orderedItems, setOrderedItems] = useState<StoreListItemWithItem[]>([]);
   const [showCreateStore, setShowCreateStore] = useState(false);
   const hasInitialized = useRef(false);
+  const prevStoreIdRef = useRef<number | null | undefined>(undefined);
   const saveOrderTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    if (!listItems) return;
+    const storeChanged = selectedStoreId !== prevStoreIdRef.current;
+    prevStoreIdRef.current = selectedStoreId;
+
+    if (storeChanged) {
+      hasInitialized.current = false;
+    }
+
+    if (!listItems) {
+      if (storeChanged) setOrderedItems([]);
+      return;
+    }
+
     if (listItems.length === 0) {
       setOrderedItems([]);
       hasInitialized.current = false;
       return;
     }
 
-    setOrderedItems(prev => {
-      if (!hasInitialized.current) {
-        hasInitialized.current = true;
-        return [...listItems].sort((a, b) => {
+    if (!hasInitialized.current) {
+      hasInitialized.current = true;
+      setOrderedItems(
+        [...listItems].sort((a, b) => {
           if (a.listOrder == null && b.listOrder == null) return 0;
           if (a.listOrder == null) return 1;
           if (b.listOrder == null) return -1;
           return a.listOrder - b.listOrder;
-        });
-      }
+        })
+      );
+      return;
+    }
 
+    setOrderedItems(prev => {
       const currentIds = new Set(listItems.map(i => i.id));
       const prevIds = new Set(prev.map(i => i.id));
 
@@ -244,7 +259,6 @@ export default function ShoppingList() {
       const addedWithOrder = addedItems.filter(i => i.listOrder != null)
         .sort((a, b) => a.listOrder! - b.listOrder!);
       const addedWithoutOrder = addedItems.filter(i => i.listOrder == null);
-
       const keptWithOrder = keptItems.filter(i => i.listOrder != null);
       const keptWithoutOrder = keptItems.filter(i => i.listOrder == null);
 
@@ -255,12 +269,7 @@ export default function ShoppingList() {
 
       return [...allWithOrder, ...keptWithoutOrder, ...addedWithoutOrder];
     });
-  }, [listItems]);
-
-  useEffect(() => {
-    setOrderedItems([]);
-    hasInitialized.current = false;
-  }, [selectedStoreId]);
+  }, [listItems, selectedStoreId]);
 
   useEffect(() => {
     if (orderedItems.length === 0) return;
