@@ -16,8 +16,29 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Plus, Loader2, Upload, Camera, X, Image as ImageIcon } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
+
+const CATEGORIES = [
+  "Produce",
+  "Dairy & Eggs",
+  "Meat & Seafood",
+  "Bakery",
+  "Frozen Foods",
+  "Pantry",
+  "Beverages",
+  "Snacks",
+  "Household",
+  "Personal Care",
+  "Other",
+];
 
 interface ItemDialogProps {
   item?: Item;
@@ -47,7 +68,8 @@ export function ItemDialog({ item, trigger, open, onOpenChange }: ItemDialogProp
       name: "",
       notes: "",
       imageUrl: "",
-      quantity: 1,
+      category: "Other",
+      quantity: "1",
       inShoppingList: false,
     },
   });
@@ -94,7 +116,8 @@ export function ItemDialog({ item, trigger, open, onOpenChange }: ItemDialogProp
           name: item.name,
           notes: item.notes || "",
           imageUrl: item.imageUrl || "",
-          quantity: item.quantity || 1,
+          category: item.category || "Other",
+          quantity: item.quantity || "1",
           inShoppingList: item.inShoppingList,
         });
       } else {
@@ -102,7 +125,8 @@ export function ItemDialog({ item, trigger, open, onOpenChange }: ItemDialogProp
           name: "",
           notes: "",
           imageUrl: "",
-          quantity: 1,
+          category: "Other",
+          quantity: "1",
           inShoppingList: false,
         });
       }
@@ -158,14 +182,34 @@ export function ItemDialog({ item, trigger, open, onOpenChange }: ItemDialogProp
               )}
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="quantity">Quantity</Label>
-              <Input
-                id="quantity"
-                placeholder="e.g. 2, 500g, 1 bottle"
-                {...form.register("quantity")}
-                className="bg-secondary/50 border-transparent focus-visible:border-primary focus-visible:bg-background transition-colors"
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="category">Category</Label>
+                <Select
+                  value={form.watch("category")}
+                  onValueChange={(value) => form.setValue("category", value)}
+                >
+                  <SelectTrigger className="bg-secondary/50 border-transparent focus:border-primary focus:bg-background transition-colors">
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CATEGORIES.map((cat) => (
+                      <SelectItem key={cat} value={cat}>
+                        {cat}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="quantity">Quantity</Label>
+                <Input
+                  id="quantity"
+                  {...form.register("quantity")}
+                  className="bg-secondary/50 border-transparent focus-visible:border-primary focus-visible:bg-background transition-colors"
+                />
+              </div>
             </div>
 
             <div className="space-y-2">

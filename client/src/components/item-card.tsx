@@ -35,7 +35,7 @@ export function ItemCard({ item, viewMode = "grid" }: ItemCardProps) {
     if (newQuantity < 1) return;
     updateMutation.mutate({
       id: item.id,
-      quantity: newQuantity,
+      quantity: String(newQuantity),
     });
   };
 
@@ -81,9 +81,14 @@ export function ItemCard({ item, viewMode = "grid" }: ItemCardProps) {
         </div>
 
         <div className="flex flex-col flex-1 justify-center min-w-0">
-          <h3 className="font-bold text-foreground text-base truncate">
-            {item.name}
-          </h3>
+          <div className="flex items-center gap-2">
+            <h3 className="font-bold text-foreground text-base truncate">
+              {item.name}
+            </h3>
+            <Badge variant="outline" className="text-[10px] h-4 px-1.5 py-0 bg-primary/5 text-primary border-primary/20">
+              {item.category}
+            </Badge>
+          </div>
           {item.notes && (
             <p className="text-xs text-muted-foreground truncate">
               {item.notes}
