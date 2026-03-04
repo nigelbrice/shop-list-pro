@@ -164,7 +164,7 @@ export function Layout({ children, auth }: { children: React.ReactNode; auth: Au
 
   const navItems = [
     { href: "/", label: "Shopping List", icon: ListChecks },
-    { href: "/database", label: "Item Database", icon: Database },
+    { href: "/database", label: "Grocery Index", icon: Database },
   ];
 
   return (

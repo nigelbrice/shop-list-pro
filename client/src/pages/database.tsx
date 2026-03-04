@@ -66,7 +66,7 @@ export default function Database() {
         <div>
           <h1 className="text-3xl sm:text-4xl font-bold font-display text-foreground flex items-center gap-2">
             <DbIcon className="w-4 h-4 text-primary/80" />
-            Item Database
+            Grocery Index
           </h1>
           <p className="text-muted-foreground mt-2 text-lg">
             Manage all your products, add notes, and build your catalog.
