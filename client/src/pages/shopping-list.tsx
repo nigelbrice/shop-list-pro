@@ -258,6 +258,7 @@ export default function ShoppingList() {
   }, [listItems]);
 
   useEffect(() => {
+    setOrderedItems([]);
     hasInitialized.current = false;
   }, [selectedStoreId]);
 

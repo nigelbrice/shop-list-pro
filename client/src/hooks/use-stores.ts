@@ -28,8 +28,12 @@ export function useCreateStore() {
       if (!res.ok) throw new Error("Failed to create store");
       return res.json() as Promise<Store>;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [api.stores.list.path] });
+    onSuccess: (newStore) => {
+      queryClient.setQueryData<Store[]>([api.stores.list.path], (old) => {
+        if (!old) return [newStore];
+        if (old.some(s => s.id === newStore.id)) return old;
+        return [...old, newStore];
+      });
     },
     onError: (error) => {
       toast({ title: "Error", description: error.message, variant: "destructive" });
