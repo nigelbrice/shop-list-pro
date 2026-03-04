@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Package, MoreVertical, Pencil, Trash2, Loader2, Check, Plus } from "lucide-react";
+import { Package, MoreVertical, Pencil, Trash2, Loader2, Check, Plus, Minus } from "lucide-react";
 import type { Item } from "@shared/schema";
 import { useUpdateItem, useDeleteItem } from "@/hooks/use-items";
 import { cn } from "@/lib/utils";
@@ -28,6 +28,14 @@ export function ItemCard({ item, viewMode = "grid" }: ItemCardProps) {
     updateMutation.mutate({
       id: item.id,
       inShoppingList: !item.inShoppingList,
+    });
+  };
+
+  const updateQuantity = (newQuantity: number) => {
+    if (newQuantity < 1) return;
+    updateMutation.mutate({
+      id: item.id,
+      quantity: newQuantity,
     });
   };
 
@@ -73,19 +81,38 @@ export function ItemCard({ item, viewMode = "grid" }: ItemCardProps) {
         </div>
 
         <div className="flex flex-col flex-1 justify-center min-w-0">
-          <div className="flex items-center gap-2">
-            <h3 className="font-bold text-foreground text-base truncate">
-              {item.name}
-            </h3>
-            <span className="text-xs font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-full whitespace-nowrap">
-              x{item.quantity}
-            </span>
-          </div>
+          <h3 className="font-bold text-foreground text-base truncate">
+            {item.name}
+          </h3>
           {item.notes && (
             <p className="text-xs text-muted-foreground truncate">
               {item.notes}
             </p>
           )}
+        </div>
+
+        <div className="flex items-center gap-1 sm:gap-2 bg-secondary/30 rounded-full px-1 py-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="w-7 h-7 sm:w-8 sm:h-8 rounded-full hover:bg-background shadow-sm"
+            onClick={() => updateQuantity(item.quantity - 1)}
+            disabled={item.quantity <= 1 || updateMutation.isPending}
+          >
+            <Minus className="w-3 h-3 sm:w-4 sm:h-4" />
+          </Button>
+          <span className="w-6 sm:w-8 text-center font-bold text-sm sm:text-base tabular-nums">
+            {item.quantity}
+          </span>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="w-7 h-7 sm:w-8 sm:h-8 rounded-full hover:bg-background shadow-sm"
+            onClick={() => updateQuantity(item.quantity + 1)}
+            disabled={updateMutation.isPending}
+          >
+            <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
+          </Button>
         </div>
       </div>
     );

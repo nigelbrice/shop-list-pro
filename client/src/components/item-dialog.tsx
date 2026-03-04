@@ -47,7 +47,7 @@ export function ItemDialog({ item, trigger, open, onOpenChange }: ItemDialogProp
       name: "",
       notes: "",
       imageUrl: "",
-      quantity: "1",
+      quantity: 1,
       inShoppingList: false,
     },
   });
@@ -94,7 +94,7 @@ export function ItemDialog({ item, trigger, open, onOpenChange }: ItemDialogProp
           name: item.name,
           notes: item.notes || "",
           imageUrl: item.imageUrl || "",
-          quantity: item.quantity || "1",
+          quantity: item.quantity || 1,
           inShoppingList: item.inShoppingList,
         });
       } else {
@@ -102,7 +102,7 @@ export function ItemDialog({ item, trigger, open, onOpenChange }: ItemDialogProp
           name: "",
           notes: "",
           imageUrl: "",
-          quantity: "1",
+          quantity: 1,
           inShoppingList: false,
         });
       }
