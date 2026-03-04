@@ -43,21 +43,8 @@ export default function ShoppingList() {
       {shoppingItems.length > 0 ? (
         <div className="space-y-3">
           {shoppingItems.map((item) => (
-            <div key={item.id} className="group flex items-center gap-3 sm:gap-4 animate-in fade-in zoom-in-95 duration-300">
-              <Button 
-                variant="outline" 
-                size="icon"
-                onClick={() => handleCheckOff(item.id)}
-                className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border-2 border-primary/20 bg-background text-transparent hover:bg-primary hover:text-primary-foreground hover:border-primary shrink-0 transition-all duration-300 hover:scale-110"
-                disabled={updateMutation.isPending}
-              >
-                <CheckCircle2 className="w-6 h-6" />
-                <span className="sr-only">Mark as done</span>
-              </Button>
-              
-              <div className="flex-1">
-                <ItemCard item={item} viewMode="list" />
-              </div>
+            <div key={item.id} className="animate-in fade-in zoom-in-95 duration-300">
+              <ItemCard item={item} viewMode="list" />
             </div>
           ))}
         </div>

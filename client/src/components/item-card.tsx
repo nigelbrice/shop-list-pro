@@ -33,13 +33,66 @@ export function ItemCard({ item, viewMode = "grid" }: ItemCardProps) {
 
   const isList = viewMode === "list";
 
+  if (isList) {
+    return (
+      <div 
+        className={cn(
+          "group relative bg-card rounded-2xl border border-border/40 overflow-hidden transition-all duration-300 flex flex-row items-center p-3 sm:p-4 gap-4",
+          "shadow-md shadow-primary/5 border-primary/20"
+        )}
+      >
+        <div className="flex items-center justify-center shrink-0">
+          <Button 
+            variant="ghost" 
+            size="icon"
+            onClick={toggleShoppingList}
+            className="w-10 h-10 rounded-full border-2 border-primary/20 hover:bg-primary/10 hover:border-primary transition-all duration-200"
+            disabled={updateMutation.isPending}
+          >
+            {updateMutation.isPending ? (
+              <Loader2 className="w-5 h-5 animate-spin text-primary" />
+            ) : (
+              <Check className="w-5 h-5 text-primary" />
+            )}
+          </Button>
+        </div>
+
+        <div className={cn(
+          "bg-secondary/30 flex items-center justify-center overflow-hidden shrink-0 w-12 h-12 rounded-xl"
+        )}>
+          {item.imageUrl && !imageError ? (
+            <img 
+              src={item.imageUrl} 
+              alt={item.name}
+              onError={() => setImageError(true)}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <Package className="w-6 h-6 text-muted-foreground/50" />
+          )}
+        </div>
+
+        <div className="flex flex-col flex-1 justify-center min-w-0">
+          <h3 className="font-bold text-foreground text-base truncate">
+            {item.name}
+          </h3>
+          {item.notes && (
+            <p className="text-xs text-muted-foreground truncate">
+              {item.notes}
+            </p>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
       <div 
         className={cn(
           "group relative bg-card rounded-2xl border border-border/40 overflow-hidden transition-all duration-300",
           item.inShoppingList ? "shadow-md shadow-primary/5 border-primary/20" : "hover:border-border/80 hover:shadow-lg hover:shadow-black/5",
-          isList ? "flex flex-row items-center p-3 sm:p-4 gap-4" : "flex flex-col flex-1"
+          "flex flex-col flex-1"
         )}
       >
         {/* Actions Dropdown */}
