@@ -107,7 +107,7 @@ export function ItemCard({ item }: ItemCardProps) {
         </div>
 
         <div className="flex flex-col flex-1 p-3">
-          <div className="flex flex-wrap gap-1 mb-1">
+          <div className="flex flex-col items-start gap-1 mb-1">
             {item.category && (
               <Badge variant="secondary" className="text-[10px] px-1.5 py-0" data-testid={`badge-category-${item.id}`}>
                 {item.category}
