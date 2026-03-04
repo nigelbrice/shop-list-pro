@@ -75,9 +75,7 @@ export function useRealtime(onPresenceChange: (count: number) => void) {
           return [...old, listItem];
         }
       );
-      queryClient.setQueryData<StoreWithCount[]>([api.stores.list.path], (old) =>
-        old ? old.map(s => s.id === listItem.storeId ? { ...s, itemCount: s.itemCount + 1 } : s) : old
-      );
+      queryClient.invalidateQueries({ queryKey: [api.stores.list.path] });
     });
 
     es.addEventListener("store:list:updated", (e) => {
@@ -94,9 +92,7 @@ export function useRealtime(onPresenceChange: (count: number) => void) {
         [api.stores.getList.path, storeId],
         (old) => old ? old.filter(i => i.id !== listItemId) : old
       );
-      queryClient.setQueryData<StoreWithCount[]>([api.stores.list.path], (old) =>
-        old ? old.map(s => s.id === storeId ? { ...s, itemCount: Math.max(0, s.itemCount - 1) } : s) : old
-      );
+      queryClient.invalidateQueries({ queryKey: [api.stores.list.path] });
     });
 
     es.addEventListener("store:list:reordered", (e) => {
