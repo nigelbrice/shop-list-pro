@@ -21,7 +21,7 @@ import {
   DndContext,
   closestCenter,
   KeyboardSensor,
-  PointerSensor,
+  MouseSensor,
   TouchSensor,
   useSensor,
   useSensors,
@@ -161,6 +161,7 @@ function SortableRow({ listItem, storeId }: { listItem: StoreListItemWithItem; s
   return (
     <div ref={setNodeRef} style={style} className="flex items-center gap-2 animate-in fade-in zoom-in-95 duration-300">
       <div {...attributes} {...listeners}
+        style={{ touchAction: "none" }}
         className="flex items-center justify-center w-8 h-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/60 cursor-grab active:cursor-grabbing transition-colors shrink-0"
         data-testid={`drag-handle-${listItem.id}`}>
         <GripVertical className="w-4 h-4" />
@@ -364,8 +365,8 @@ export default function ShoppingList() {
   }, [orderedItems]);
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } }),
+    useSensor(MouseSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
