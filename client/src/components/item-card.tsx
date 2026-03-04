@@ -91,8 +91,8 @@ export function ItemCard({ item }: ItemCardProps) {
           </DropdownMenu>
         </div>
 
-        <div className="flex justify-center pt-4 pb-1 shrink-0">
-          <div className="w-16 h-16 rounded-xl bg-secondary/30 flex items-center justify-center overflow-hidden">
+        <div className="flex justify-center pt-3 pb-1 shrink-0">
+          <div className="w-12 h-12 rounded-lg bg-secondary/30 flex items-center justify-center overflow-hidden">
             {item.imageUrl && !imageError ? (
               <img
                 src={item.imageUrl}
@@ -106,55 +106,55 @@ export function ItemCard({ item }: ItemCardProps) {
           </div>
         </div>
 
-        <div className="flex flex-col flex-1 p-5">
-          <div className="flex flex-wrap gap-1.5 mb-2">
+        <div className="flex flex-col flex-1 p-3">
+          <div className="flex flex-wrap gap-1 mb-1">
             {item.category && (
-              <Badge variant="secondary" className="text-xs" data-testid={`badge-category-${item.id}`}>
+              <Badge variant="secondary" className="text-[10px] px-1.5 py-0" data-testid={`badge-category-${item.id}`}>
                 {item.category}
               </Badge>
             )}
             {effectiveStore && (
-              <Badge variant="outline" className="text-xs text-primary/70 border-primary/20 bg-primary/5 gap-1" data-testid={`badge-store-${item.id}`}>
-                <Store className="w-2.5 h-2.5" />
+              <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-primary/70 border-primary/20 bg-primary/5 gap-0.5" data-testid={`badge-store-${item.id}`}>
+                <Store className="w-2 h-2" />
                 {effectiveStore.name}
               </Badge>
             )}
           </div>
 
-          <h3 className="font-bold text-foreground text-lg mb-1" data-testid={`text-name-${item.id}`}>
+          <h3 className="font-bold text-foreground text-sm leading-tight mb-1 line-clamp-2" data-testid={`text-name-${item.id}`}>
             {item.name}
           </h3>
           {item.notes && (
-            <p className="text-sm text-muted-foreground line-clamp-2 mt-1 mb-4 flex-1">
+            <p className="text-xs text-muted-foreground line-clamp-1 mb-2 flex-1">
               {item.notes}
             </p>
           )}
 
-          <div className="mt-auto pt-4 border-t border-border/40">
+          <div className="mt-auto pt-2 border-t border-border/40">
             {effectiveStoreId ? (
               <Button
                 onClick={handleToggleList}
                 disabled={isListPending}
                 variant={isOnList ? "secondary" : "default"}
                 className={cn(
-                  "w-full rounded-xl font-medium transition-all duration-300",
+                  "w-full rounded-lg text-xs font-medium h-7 px-2 transition-all duration-300",
                   isOnList ? "bg-secondary text-secondary-foreground hover:bg-secondary/80" : "hover-lift"
                 )}
                 data-testid={`button-toggle-list-${item.id}`}
               >
                 {isListPending ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loader2 className="w-3 h-3 animate-spin" />
                 ) : isOnList ? (
-                  <><Check className="w-4 h-4 mr-2" />{buttonLabel()}</>
+                  <><Check className="w-3 h-3 mr-1" />{buttonLabel()}</>
                 ) : (
-                  <><Plus className="w-4 h-4 mr-2" />{buttonLabel()}</>
+                  <><Plus className="w-3 h-3 mr-1" />{buttonLabel()}</>
                 )}
               </Button>
             ) : (
               <Button
                 asChild
                 variant="outline"
-                className="w-full rounded-xl font-medium"
+                className="w-full rounded-lg text-xs font-medium h-7 px-2"
               >
                 <a href="/">Select a store first</a>
               </Button>
