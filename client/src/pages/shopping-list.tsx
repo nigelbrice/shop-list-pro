@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useStoreContext } from "@/context/store-context";
 import { useStores, useCreateStore, useDeleteStore, useStoreList, useUpdateStoreListItem, useRemoveFromStoreList, useReorderStoreList } from "@/hooks/use-stores";
-import { ShoppingBag, Loader2, CheckCircle2, GripVertical, Plus, Minus, Check, Package, Store, Trash2, X } from "lucide-react";
+import { ShoppingBag, Loader2, CheckCircle2, GripVertical, Plus, Minus, Check, Package, Store, Trash2, X, Expand } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -11,6 +11,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   DndContext,
   closestCenter,
@@ -42,33 +48,75 @@ function StoreListRow({ listItem, storeId }: { listItem: StoreListItemWithItem; 
   const updateMutation = useUpdateStoreListItem(storeId);
   const removeMutation = useRemoveFromStoreList(storeId);
   const [imageError, setImageError] = useState(false);
+  const [showPhoto, setShowPhoto] = useState(false);
+
+  const hasImage = !!listItem.item.imageUrl && !imageError;
 
   return (
-    <div
-      className="group relative bg-card rounded-2xl border border-border/40 overflow-hidden flex flex-row items-center p-3 sm:p-4 gap-3 shadow-sm"
-      data-testid={`list-item-${listItem.id}`}
-    >
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={() => removeMutation.mutate(listItem.id)}
-        className="w-10 h-10 rounded-full border-2 border-primary/20 hover:bg-primary/10 hover:border-primary transition-all duration-200 shrink-0"
-        disabled={removeMutation.isPending}
-        data-testid={`button-remove-${listItem.id}`}
-      >
-        {removeMutation.isPending
-          ? <Loader2 className="w-5 h-5 animate-spin text-primary" />
-          : <Check className="w-5 h-5 text-primary" />}
-      </Button>
+    <>
+      <Dialog open={showPhoto} onOpenChange={setShowPhoto}>
+        <DialogContent className="max-w-lg border-border/50 shadow-2xl">
+          <DialogHeader>
+            <DialogTitle className="font-display text-xl">{listItem.item.name}</DialogTitle>
+          </DialogHeader>
+          <div className="rounded-xl overflow-hidden bg-secondary/30">
+            {hasImage ? (
+              <img
+                src={listItem.item.imageUrl!}
+                alt={listItem.item.name}
+                className="w-full object-contain max-h-[60vh]"
+              />
+            ) : (
+              <div className="flex items-center justify-center h-48 text-muted-foreground">
+                <Package className="w-12 h-12 opacity-30" />
+              </div>
+            )}
+          </div>
+          {listItem.item.notes && (
+            <p className="text-sm text-muted-foreground">{listItem.item.notes}</p>
+          )}
+        </DialogContent>
+      </Dialog>
 
-      <div className="bg-secondary/30 flex items-center justify-center overflow-hidden shrink-0 w-12 h-12 rounded-xl">
-        {listItem.item.imageUrl && !imageError ? (
-          <img src={listItem.item.imageUrl} alt={listItem.item.name}
-            onError={() => setImageError(true)} className="w-full h-full object-cover" />
-        ) : (
-          <Package className="w-6 h-6 text-muted-foreground/50" />
-        )}
-      </div>
+      <div
+        className="group relative bg-card rounded-2xl border border-border/40 overflow-hidden flex flex-row items-center p-3 sm:p-4 gap-3 shadow-sm"
+        data-testid={`list-item-${listItem.id}`}
+      >
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => removeMutation.mutate(listItem.id)}
+          className="w-10 h-10 rounded-full border-2 border-primary/20 hover:bg-primary/10 hover:border-primary transition-all duration-200 shrink-0"
+          disabled={removeMutation.isPending}
+          data-testid={`button-remove-${listItem.id}`}
+        >
+          {removeMutation.isPending
+            ? <Loader2 className="w-5 h-5 animate-spin text-primary" />
+            : <Check className="w-5 h-5 text-primary" />}
+        </Button>
+
+        <button
+          onClick={() => hasImage && setShowPhoto(true)}
+          className={cn(
+            "bg-secondary/30 flex items-center justify-center overflow-hidden shrink-0 w-12 h-12 rounded-xl relative group/thumb",
+            hasImage ? "cursor-pointer" : "cursor-default"
+          )}
+          disabled={!hasImage}
+          aria-label={hasImage ? `View photo of ${listItem.item.name}` : undefined}
+          data-testid={`button-photo-${listItem.id}`}
+        >
+          {hasImage ? (
+            <>
+              <img src={listItem.item.imageUrl!} alt={listItem.item.name}
+                onError={() => setImageError(true)} className="w-full h-full object-cover" />
+              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/thumb:opacity-100 transition-opacity flex items-center justify-center rounded-xl">
+                <Expand className="w-4 h-4 text-white" />
+              </div>
+            </>
+          ) : (
+            <Package className="w-6 h-6 text-muted-foreground/50" />
+          )}
+        </button>
 
       <div className="flex flex-col flex-1 justify-center min-w-0">
         <h3 className="font-bold text-foreground text-base truncate" data-testid={`text-name-${listItem.id}`}>
@@ -101,6 +149,7 @@ function StoreListRow({ listItem, storeId }: { listItem: StoreListItemWithItem; 
         </Button>
       </div>
     </div>
+    </>
   );
 }
 
