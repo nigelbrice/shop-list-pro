@@ -50,6 +50,14 @@ export const api = {
         404: errorSchemas.notFound,
       },
     },
+    reorder: {
+      method: 'POST' as const,
+      path: '/api/items/reorder' as const,
+      input: z.object({ orderedIds: z.array(z.number()) }),
+      responses: {
+        200: z.object({ success: z.boolean() }),
+      },
+    },
   },
 };
 

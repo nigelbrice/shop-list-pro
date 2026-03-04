@@ -1,6 +1,6 @@
 import { db } from "./db";
 import { items, type Item, type InsertItem, type UpdateItemRequest } from "@shared/schema";
-import { eq } from "drizzle-orm";
+import { eq, asc, desc, sql } from "drizzle-orm";
 
 export interface IStorage {
   getItems(): Promise<Item[]>;
@@ -8,6 +8,7 @@ export interface IStorage {
   createItem(item: InsertItem): Promise<Item>;
   updateItem(id: number, updates: UpdateItemRequest): Promise<Item | undefined>;
   deleteItem(id: number): Promise<void>;
+  reorderListItems(orderedIds: number[]): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -35,6 +36,14 @@ export class DatabaseStorage implements IStorage {
 
   async deleteItem(id: number): Promise<void> {
     await db.delete(items).where(eq(items.id, id));
+  }
+
+  async reorderListItems(orderedIds: number[]): Promise<void> {
+    await Promise.all(
+      orderedIds.map((id, index) =>
+        db.update(items).set({ listOrder: index }).where(eq(items.id, id))
+      )
+    );
   }
 }
 

@@ -7,7 +7,6 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 
-// Setup storage for uploaded files
 const uploadDir = path.join(process.cwd(), "client", "public", "uploads");
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
@@ -29,7 +28,6 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
-  // Image upload endpoint
   app.post("/api/upload", upload.single("image"), (req, res) => {
     if (!req.file) {
       return res.status(400).json({ message: "No file uploaded" });
@@ -44,6 +42,19 @@ export async function registerRoutes(
       res.json(itemsList);
     } catch (error) {
       res.status(500).json({ message: "Failed to fetch items" });
+    }
+  });
+
+  app.post(api.items.reorder.path, async (req, res) => {
+    try {
+      const { orderedIds } = api.items.reorder.input.parse(req.body);
+      await storage.reorderListItems(orderedIds);
+      res.json({ success: true });
+    } catch (err) {
+      if (err instanceof z.ZodError) {
+        return res.status(400).json({ message: err.errors[0].message });
+      }
+      res.status(500).json({ message: "Failed to reorder items" });
     }
   });
 
@@ -117,15 +128,18 @@ async function seedDatabase() {
     if (existingItems.length === 0) {
       await storage.createItem({ 
         name: "Milk", 
+        category: "Dairy",
         notes: "Whole milk preferred", 
         inShoppingList: true 
       });
       await storage.createItem({ 
         name: "Eggs", 
+        category: "Dairy",
         inShoppingList: true 
       });
       await storage.createItem({ 
         name: "Coffee Beans", 
+        category: "Beverages",
         notes: "Dark roast", 
         inShoppingList: false 
       });

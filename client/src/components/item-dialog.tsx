@@ -16,8 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Loader2, Upload, Camera, X, Image as ImageIcon } from "lucide-react";
-import { apiRequest } from "@/lib/queryClient";
+import { Plus, Loader2, Camera, X } from "lucide-react";
 
 interface ItemDialogProps {
   item?: Item;
@@ -45,6 +44,7 @@ export function ItemDialog({ item, trigger, open, onOpenChange }: ItemDialogProp
     resolver: zodResolver(insertItemSchema),
     defaultValues: {
       name: "",
+      category: "",
       notes: "",
       imageUrl: "",
       quantity: 1,
@@ -86,12 +86,12 @@ export function ItemDialog({ item, trigger, open, onOpenChange }: ItemDialogProp
     }
   };
 
-  // Reset form when dialog opens/closes or item changes
   useEffect(() => {
     if (dialogOpen) {
       if (item) {
         form.reset({
           name: item.name,
+          category: item.category || "",
           notes: item.notes || "",
           imageUrl: item.imageUrl || "",
           quantity: item.quantity || 1,
@@ -100,6 +100,7 @@ export function ItemDialog({ item, trigger, open, onOpenChange }: ItemDialogProp
       } else {
         form.reset({
           name: "",
+          category: "",
           notes: "",
           imageUrl: "",
           quantity: 1,
@@ -149,6 +150,7 @@ export function ItemDialog({ item, trigger, open, onOpenChange }: ItemDialogProp
               <Label htmlFor="name">Item Name <span className="text-destructive">*</span></Label>
               <Input
                 id="name"
+                data-testid="input-name"
                 placeholder="e.g. Organic Avocados"
                 {...form.register("name")}
                 className="bg-secondary/50 border-transparent focus-visible:border-primary focus-visible:bg-background transition-colors"
@@ -159,11 +161,25 @@ export function ItemDialog({ item, trigger, open, onOpenChange }: ItemDialogProp
             </div>
 
             <div className="space-y-2">
+              <Label htmlFor="category">Category</Label>
+              <Input
+                id="category"
+                data-testid="input-category"
+                placeholder="e.g. Dairy, Produce, Beverages"
+                {...form.register("category")}
+                className="bg-secondary/50 border-transparent focus-visible:border-primary focus-visible:bg-background transition-colors"
+              />
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="quantity">Quantity</Label>
               <Input
                 id="quantity"
-                placeholder="e.g. 2, 500g, 1 bottle"
-                {...form.register("quantity")}
+                data-testid="input-quantity"
+                type="number"
+                min={1}
+                placeholder="1"
+                {...form.register("quantity", { valueAsNumber: true })}
                 className="bg-secondary/50 border-transparent focus-visible:border-primary focus-visible:bg-background transition-colors"
               />
             </div>
@@ -172,6 +188,7 @@ export function ItemDialog({ item, trigger, open, onOpenChange }: ItemDialogProp
               <Label htmlFor="notes">Notes</Label>
               <Textarea
                 id="notes"
+                data-testid="input-notes"
                 placeholder="Brand preferences, aisles, or quantity..."
                 {...form.register("notes")}
                 className="resize-none min-h-[100px] bg-secondary/50 border-transparent focus-visible:border-primary focus-visible:bg-background transition-colors"
@@ -238,6 +255,7 @@ export function ItemDialog({ item, trigger, open, onOpenChange }: ItemDialogProp
               </div>
               <Switch
                 id="inShoppingList"
+                data-testid="switch-inShoppingList"
                 checked={form.watch("inShoppingList")}
                 onCheckedChange={(checked) => form.setValue("inShoppingList", checked)}
               />
@@ -250,10 +268,11 @@ export function ItemDialog({ item, trigger, open, onOpenChange }: ItemDialogProp
               variant="ghost"
               onClick={() => setDialogOpen(false)}
               disabled={isPending}
+              data-testid="button-cancel"
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isPending} className="hover-lift min-w-[120px]">
+            <Button type="submit" disabled={isPending} className="hover-lift min-w-[120px]" data-testid="button-submit">
               {isPending ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : isEditing ? (

@@ -12,20 +12,29 @@ import {
 } from "@/components/ui/select";
 import { Search, Loader2, Database as DbIcon, Library } from "lucide-react";
 
-type SortOption = "name_asc" | "name_desc" | "newest" | "oldest";
+type SortOption = "name_asc" | "name_desc" | "newest" | "oldest" | "category";
 
 export default function Database() {
   const { data: items, isLoading } = useItems();
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState<SortOption>("newest");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+
+  const categories = useMemo(() => {
+    if (!items) return [];
+    const cats = Array.from(new Set(items.map(i => i.category).filter(Boolean) as string[]));
+    return cats.sort();
+  }, [items]);
 
   const filteredAndSortedItems = useMemo(() => {
     if (!items) return [];
 
-    let result = items.filter(item => 
-      item.name.toLowerCase().includes(search.toLowerCase()) || 
-      (item.notes && item.notes.toLowerCase().includes(search.toLowerCase()))
-    );
+    let result = items.filter(item => {
+      const matchesSearch = item.name.toLowerCase().includes(search.toLowerCase()) || 
+        (item.notes && item.notes.toLowerCase().includes(search.toLowerCase()));
+      const matchesCategory = categoryFilter === "all" || item.category === categoryFilter;
+      return matchesSearch && matchesCategory;
+    });
 
     result.sort((a, b) => {
       switch (sortBy) {
@@ -37,13 +46,15 @@ export default function Database() {
           return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
         case "oldest":
           return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        case "category":
+          return (a.category || "").localeCompare(b.category || "");
         default:
           return 0;
       }
     });
 
     return result;
-  }, [items, search, sortBy]);
+  }, [items, search, sortBy, categoryFilter]);
 
   if (isLoading) {
     return (
@@ -57,7 +68,6 @@ export default function Database() {
   return (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       
-      {/* Header & Controls */}
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6">
         <div>
           <h1 className="text-3xl sm:text-4xl font-bold font-display text-foreground flex items-center gap-3">
@@ -79,12 +89,28 @@ export default function Database() {
             placeholder="Search items..." 
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            data-testid="input-search"
             className="pl-10 h-12 bg-secondary/30 border-transparent focus-visible:bg-background text-base rounded-xl"
           />
         </div>
+        {categories.length > 0 && (
+          <div className="w-full sm:w-[180px]">
+            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+              <SelectTrigger className="h-12 bg-secondary/30 border-transparent rounded-xl text-base" data-testid="select-category-filter">
+                <SelectValue placeholder="All Categories" />
+              </SelectTrigger>
+              <SelectContent className="rounded-xl border-border/50 shadow-xl">
+                <SelectItem value="all">All Categories</SelectItem>
+                {categories.map(cat => (
+                  <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
         <div className="w-full sm:w-[200px]">
           <Select value={sortBy} onValueChange={(val: SortOption) => setSortBy(val)}>
-            <SelectTrigger className="h-12 bg-secondary/30 border-transparent rounded-xl text-base">
+            <SelectTrigger className="h-12 bg-secondary/30 border-transparent rounded-xl text-base" data-testid="select-sort">
               <SelectValue placeholder="Sort by" />
             </SelectTrigger>
             <SelectContent className="rounded-xl border-border/50 shadow-xl">
@@ -92,12 +118,12 @@ export default function Database() {
               <SelectItem value="oldest">Oldest Added</SelectItem>
               <SelectItem value="name_asc">Alphabetical (A-Z)</SelectItem>
               <SelectItem value="name_desc">Alphabetical (Z-A)</SelectItem>
+              <SelectItem value="category">By Category</SelectItem>
             </SelectContent>
           </Select>
         </div>
       </div>
 
-      {/* Grid */}
       {filteredAndSortedItems.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredAndSortedItems.map((item) => (
@@ -111,9 +137,9 @@ export default function Database() {
           </div>
           <h3 className="text-xl font-bold font-display text-foreground mb-2">No items found</h3>
           <p className="text-muted-foreground max-w-sm mb-6">
-            {search ? "We couldn't find anything matching your search." : "Your database is empty. Add some items to get started."}
+            {search || categoryFilter !== "all" ? "We couldn't find anything matching your filters." : "Your database is empty. Add some items to get started."}
           </p>
-          {!search && <ItemDialog />}
+          {!search && categoryFilter === "all" && <ItemDialog />}
         </div>
       )}
     </div>

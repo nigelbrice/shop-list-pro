@@ -1,20 +1,106 @@
-import { useItems, useUpdateItem } from "@/hooks/use-items";
+import { useState, useEffect, useCallback } from "react";
+import { useItems, useReorderItems } from "@/hooks/use-items";
 import { ItemCard } from "@/components/item-card";
-import { ShoppingBag, Loader2, CheckCircle2 } from "lucide-react";
+import { ShoppingBag, Loader2, CheckCircle2, GripVertical } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
+import type { Item } from "@shared/schema";
+
+function SortableItem({ item }: { item: Item }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: item.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 50 : undefined,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="flex items-center gap-2 animate-in fade-in zoom-in-95 duration-300"
+    >
+      <div
+        {...attributes}
+        {...listeners}
+        className="flex items-center justify-center w-8 h-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/60 cursor-grab active:cursor-grabbing transition-colors shrink-0"
+        data-testid={`drag-handle-${item.id}`}
+      >
+        <GripVertical className="w-4 h-4" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <ItemCard item={item} viewMode="list" />
+      </div>
+    </div>
+  );
+}
 
 export default function ShoppingList() {
   const { data: items, isLoading } = useItems();
-  const updateMutation = useUpdateItem();
+  const reorderMutation = useReorderItems();
 
-  const shoppingItems = items?.filter(item => item.inShoppingList) || [];
+  const rawShoppingItems = items?.filter(item => item.inShoppingList) || [];
 
-  const handleCheckOff = (id: number) => {
-    updateMutation.mutate({
-      id,
-      inShoppingList: false,
+  const [orderedItems, setOrderedItems] = useState<Item[]>([]);
+
+  useEffect(() => {
+    if (rawShoppingItems.length === 0) {
+      setOrderedItems([]);
+      return;
+    }
+    setOrderedItems(prev => {
+      const prevIds = prev.map(i => i.id);
+      const newIds = rawShoppingItems.map(i => i.id);
+      const addedItems = rawShoppingItems.filter(i => !prevIds.includes(i.id));
+      const keptItems = prev
+        .filter(i => newIds.includes(i.id))
+        .map(prevItem => rawShoppingItems.find(r => r.id === prevItem.id) || prevItem);
+      return [...keptItems, ...addedItems];
     });
-  };
+  }, [items]);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  const handleDragEnd = useCallback((event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    setOrderedItems(prev => {
+      const oldIndex = prev.findIndex(i => i.id === active.id);
+      const newIndex = prev.findIndex(i => i.id === over.id);
+      const reordered = arrayMove(prev, oldIndex, newIndex);
+      reorderMutation.mutate(reordered.map(i => i.id));
+      return reordered;
+    });
+  }, [reorderMutation]);
 
   if (isLoading) {
     return (
@@ -34,20 +120,29 @@ export default function ShoppingList() {
           Shopping List
         </h1>
         <p className="text-muted-foreground mt-3 text-lg">
-          {shoppingItems.length === 0 
+          {orderedItems.length === 0 
             ? "Your list is completely clear."
-            : `You have ${shoppingItems.length} item${shoppingItems.length === 1 ? '' : 's'} to pick up.`}
+            : `You have ${orderedItems.length} item${orderedItems.length === 1 ? '' : 's'} to pick up.`}
         </p>
       </div>
 
-      {shoppingItems.length > 0 ? (
-        <div className="space-y-3">
-          {shoppingItems.map((item) => (
-            <div key={item.id} className="animate-in fade-in zoom-in-95 duration-300">
-              <ItemCard item={item} viewMode="list" />
+      {orderedItems.length > 0 ? (
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={orderedItems.map(i => i.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            <div className="space-y-2">
+              {orderedItems.map((item) => (
+                <SortableItem key={item.id} item={item} />
+              ))}
             </div>
-          ))}
-        </div>
+          </SortableContext>
+        </DndContext>
       ) : (
         <div className="flex flex-col items-center justify-center text-center p-12 bg-gradient-to-b from-card to-secondary/20 rounded-3xl border border-border/50 shadow-sm mt-8 min-h-[400px]">
           <div className="w-20 h-20 bg-background rounded-full flex items-center justify-center mb-6 shadow-sm">

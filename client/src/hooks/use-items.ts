@@ -9,8 +9,6 @@ export function useItems() {
     queryFn: async () => {
       const res = await fetch(api.items.list.path, { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch items");
-      // Zod custom schemas allow pass-through if not strictly typed with runtime validation,
-      // parsing here ensures the structure passes validation defined in routes
       return api.items.list.responses[200].parse(await res.json()) as Item[];
     },
   });
@@ -65,7 +63,10 @@ export function useUpdateItem() {
       return api.items.update.responses[200].parse(await res.json()) as Item;
     },
     onSuccess: (updatedItem) => {
-      queryClient.invalidateQueries({ queryKey: [api.items.list.path] });
+      queryClient.setQueryData<Item[]>([api.items.list.path], (old) => {
+        if (!old) return old;
+        return old.map((item) => item.id === updatedItem.id ? updatedItem : item);
+      });
     },
     onError: (error) => {
       toast({
@@ -98,6 +99,31 @@ export function useDeleteItem() {
       });
     },
     onError: (error) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+}
+
+export function useReorderItems() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (orderedIds: number[]) => {
+      const res = await fetch(api.items.reorder.path, {
+        method: api.items.reorder.method,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderedIds }),
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to reorder items");
+    },
+    onError: (error) => {
+      queryClient.invalidateQueries({ queryKey: [api.items.list.path] });
       toast({
         title: "Error",
         description: error.message,

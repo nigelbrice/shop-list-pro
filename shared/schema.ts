@@ -5,10 +5,12 @@ import { z } from "zod";
 export const items = pgTable("items", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
+  category: text("category"),
   notes: text("notes"),
   imageUrl: text("image_url"),
   quantity: integer("quantity").default(1).notNull(),
   inShoppingList: boolean("in_shopping_list").default(false).notNull(),
+  listOrder: integer("list_order"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
