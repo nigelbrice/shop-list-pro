@@ -337,8 +337,8 @@ export function ItemDialog({ item, trigger, open, onOpenChange }: ItemDialogProp
                     </div>
                   </div>
                 ) : (
-                  <div
-                    onClick={() => fileInputRef.current?.click()}
+                  <label
+                    htmlFor="item-photo-input"
                     className="aspect-video rounded-xl border-2 border-dashed border-border/50 bg-secondary/30 flex flex-col items-center justify-center cursor-pointer hover:bg-secondary/50 hover:border-primary/50 transition-all group"
                   >
                     {isUploading ? (
@@ -348,17 +348,18 @@ export function ItemDialog({ item, trigger, open, onOpenChange }: ItemDialogProp
                         <div className="w-12 h-12 rounded-full bg-background flex items-center justify-center mb-3 shadow-sm group-hover:scale-110 transition-transform">
                           <Camera className="w-6 h-6 text-primary" />
                         </div>
-                        <p className="text-sm font-medium">Click to upload or take a photo</p>
-                        <p className="text-xs text-muted-foreground mt-1">PNG, JPG up to 10MB</p>
+                        <p className="text-sm font-medium">Tap to upload or take a photo</p>
+                        <p className="text-xs text-muted-foreground mt-1">Any image format</p>
                       </>
                     )}
-                  </div>
+                  </label>
                 )}
                 <input
+                  id="item-photo-input"
                   type="file"
                   ref={fileInputRef}
                   onChange={handleFileChange}
-                  accept="image/*,image/heic,image/heif"
+                  accept="image/*"
                   className="hidden"
                 />
               </div>
