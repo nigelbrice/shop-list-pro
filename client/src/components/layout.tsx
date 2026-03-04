@@ -1,9 +1,10 @@
 import { useState, useCallback } from "react";
 import { Link, useLocation } from "wouter";
-import { ListChecks, Database, Users, LogOut, ChevronDown, UserCircle2, Plus, Loader2, Check, Trash2 } from "lucide-react";
+import { ListChecks, Database, Users, LogOut, ChevronDown, UserCircle2, Plus, Loader2, Check, Trash2, Sun, Moon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRealtime } from "@/hooks/use-realtime";
 import { useLogout, useSwitchUser, useAddMember, useDeleteMember } from "@/hooks/use-auth";
+import { useTheme } from "@/components/theme-provider";
 import type { AuthState } from "@/hooks/use-auth";
 import {
   DropdownMenu,
@@ -155,6 +156,7 @@ function MemberMenu({ auth }: { auth: AuthState }) {
 export function Layout({ children, auth }: { children: React.ReactNode; auth: AuthState }) {
   const [location] = useLocation();
   const [onlineCount, setOnlineCount] = useState(1);
+  const { theme, toggleTheme } = useTheme();
 
   const handlePresenceChange = useCallback((count: number) => {
     setOnlineCount(count);
@@ -193,6 +195,15 @@ export function Layout({ children, auth }: { children: React.ReactNode; auth: Au
               <Users className="w-4 h-4" />
               <span className="tabular-nums font-medium text-foreground">{onlineCount}</span>
             </div>
+
+            <button
+              onClick={toggleTheme}
+              data-testid="button-theme-toggle"
+              title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+              className="w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition-colors"
+            >
+              {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+            </button>
 
             <nav className="flex items-center gap-1 sm:gap-2 bg-secondary/50 p-1 rounded-xl">
               {navItems.map((item) => {
