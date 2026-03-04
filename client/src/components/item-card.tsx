@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { Package, MoreVertical, Pencil, Trash2, Loader2, Check, Plus } from "lucide-react";
+import { Package, MoreVertical, Pencil, Trash2, Loader2, Check, Plus, Store } from "lucide-react";
 import type { Item } from "@shared/schema";
 import { useUpdateItem, useDeleteItem } from "@/hooks/use-items";
 import { useStoreContext } from "@/context/store-context";
-import { useAddToStoreList, useRemoveFromStoreList } from "@/hooks/use-stores";
+import { useStores, useStoreList, useAddToStoreList, useRemoveFromStoreList } from "@/hooks/use-stores";
 import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
@@ -18,29 +18,42 @@ import { ItemDialog } from "./item-dialog";
 
 interface ItemCardProps {
   item: Item;
-  listItemId?: number | null;
 }
 
-export function ItemCard({ item, listItemId }: ItemCardProps) {
-  const updateMutation = useUpdateItem();
+export function ItemCard({ item }: ItemCardProps) {
   const deleteMutation = useDeleteItem();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [imageError, setImageError] = useState(false);
 
   const { selectedStoreId } = useStoreContext();
-  const addToListMutation = useAddToStoreList(selectedStoreId);
-  const removeFromListMutation = useRemoveFromStoreList(selectedStoreId);
+  const { data: stores } = useStores();
 
+  const effectiveStoreId = item.defaultStoreId ?? selectedStoreId;
+  const { data: storeList } = useStoreList(effectiveStoreId);
+
+  const listItemId = storeList?.find(li => li.itemId === item.id)?.id ?? null;
   const isOnList = listItemId != null;
+
+  const effectiveStore = stores?.find(s => s.id === effectiveStoreId);
+
+  const addToListMutation = useAddToStoreList(effectiveStoreId);
+  const removeFromListMutation = useRemoveFromStoreList(effectiveStoreId);
   const isListPending = addToListMutation.isPending || removeFromListMutation.isPending;
 
   const handleToggleList = () => {
-    if (!selectedStoreId) return;
+    if (!effectiveStoreId) return;
     if (isOnList) {
       removeFromListMutation.mutate(listItemId);
     } else {
       addToListMutation.mutate({ itemId: item.id, quantity: item.quantity });
     }
+  };
+
+  const buttonLabel = () => {
+    if (isListPending) return null;
+    if (isOnList) return effectiveStore ? `In ${effectiveStore.name} list` : "On List";
+    if (effectiveStore) return `Add to ${effectiveStore.name}`;
+    return "Add to List";
   };
 
   return (
@@ -92,11 +105,20 @@ export function ItemCard({ item, listItemId }: ItemCardProps) {
         </div>
 
         <div className="flex flex-col flex-1 p-5">
-          {item.category && (
-            <Badge variant="secondary" className="self-start mb-2 text-xs" data-testid={`badge-category-${item.id}`}>
-              {item.category}
-            </Badge>
-          )}
+          <div className="flex flex-wrap gap-1.5 mb-2">
+            {item.category && (
+              <Badge variant="secondary" className="text-xs" data-testid={`badge-category-${item.id}`}>
+                {item.category}
+              </Badge>
+            )}
+            {effectiveStore && (
+              <Badge variant="outline" className="text-xs text-primary/70 border-primary/20 bg-primary/5 gap-1" data-testid={`badge-store-${item.id}`}>
+                <Store className="w-2.5 h-2.5" />
+                {effectiveStore.name}
+              </Badge>
+            )}
+          </div>
+
           <h3 className="font-bold text-foreground text-lg mb-1" data-testid={`text-name-${item.id}`}>
             {item.name}
           </h3>
@@ -107,7 +129,7 @@ export function ItemCard({ item, listItemId }: ItemCardProps) {
           )}
 
           <div className="mt-auto pt-4 border-t border-border/40">
-            {selectedStoreId ? (
+            {effectiveStoreId ? (
               <Button
                 onClick={handleToggleList}
                 disabled={isListPending}
@@ -121,9 +143,9 @@ export function ItemCard({ item, listItemId }: ItemCardProps) {
                 {isListPending ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : isOnList ? (
-                  <><Check className="w-4 h-4 mr-2" />On List</>
+                  <><Check className="w-4 h-4 mr-2" />{buttonLabel()}</>
                 ) : (
-                  <><Plus className="w-4 h-4 mr-2" />Add to List</>
+                  <><Plus className="w-4 h-4 mr-2" />{buttonLabel()}</>
                 )}
               </Button>
             ) : (

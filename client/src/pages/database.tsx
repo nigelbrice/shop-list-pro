@@ -1,11 +1,8 @@
 import { useState, useMemo } from "react";
 import { useItems } from "@/hooks/use-items";
-import { useStoreList } from "@/hooks/use-stores";
-import { useStoreContext } from "@/context/store-context";
 import { ItemCard } from "@/components/item-card";
 import { ItemDialog } from "@/components/item-dialog";
 import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -13,24 +10,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, Loader2, Database as DbIcon, Library, Store } from "lucide-react";
+import { Search, Loader2, Database as DbIcon, Library } from "lucide-react";
 
 type SortOption = "name_asc" | "name_desc" | "newest" | "oldest" | "category";
 
 export default function Database() {
   const { data: items, isLoading } = useItems();
-  const { selectedStoreId } = useStoreContext();
-  const { data: storeList } = useStoreList(selectedStoreId);
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState<SortOption>("newest");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
-
-  const storeListMap = useMemo(() => {
-    if (!storeList) return new Map<number, number>();
-    const map = new Map<number, number>();
-    storeList.forEach(li => map.set(li.itemId, li.id));
-    return map;
-  }, [storeList]);
 
   const categories = useMemo(() => {
     if (!items) return [];
@@ -87,12 +75,6 @@ export default function Database() {
         <ItemDialog />
       </div>
 
-      {!selectedStoreId && (
-        <div className="flex items-center gap-3 px-4 py-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/50 rounded-xl text-sm text-amber-700 dark:text-amber-400">
-          <Store className="w-4 h-4 shrink-0" />
-          <span>Select a store list on the <a href="/" className="font-semibold underline underline-offset-2">Shopping List</a> page to add items to it.</span>
-        </div>
-      )}
 
       <div className="bg-card p-2 sm:p-3 rounded-2xl border border-border/50 shadow-sm flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
@@ -142,7 +124,6 @@ export default function Database() {
             <ItemCard
               key={item.id}
               item={item}
-              listItemId={storeListMap.get(item.id) ?? null}
             />
           ))}
         </div>

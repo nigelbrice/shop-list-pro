@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertItemSchema, type Item, type InsertItem } from "@shared/schema";
 import { useCreateItem, useUpdateItem } from "@/hooks/use-items";
+import { useStores } from "@/hooks/use-stores";
 import {
   Dialog,
   DialogContent,
@@ -57,6 +58,7 @@ export function ItemDialog({ item, trigger, open, onOpenChange }: ItemDialogProp
 
   const createMutation = useCreateItem();
   const updateMutation = useUpdateItem();
+  const { data: stores } = useStores();
 
   const isPending = createMutation.isPending || updateMutation.isPending;
   const isEditing = !!item;
@@ -69,6 +71,7 @@ export function ItemDialog({ item, trigger, open, onOpenChange }: ItemDialogProp
       notes: "",
       imageUrl: "",
       quantity: 1,
+      defaultStoreId: null,
     },
   });
 
@@ -97,6 +100,7 @@ export function ItemDialog({ item, trigger, open, onOpenChange }: ItemDialogProp
           notes: item.notes || "",
           imageUrl: item.imageUrl || "",
           quantity: item.quantity || 1,
+          defaultStoreId: item.defaultStoreId ?? null,
         });
         initCategoryState(item.category);
       } else {
@@ -106,6 +110,7 @@ export function ItemDialog({ item, trigger, open, onOpenChange }: ItemDialogProp
           notes: "",
           imageUrl: "",
           quantity: 1,
+          defaultStoreId: null,
         });
         setCategoryMode("");
         setCustomCategory("");
@@ -140,6 +145,7 @@ export function ItemDialog({ item, trigger, open, onOpenChange }: ItemDialogProp
       const res = await fetch("/api/upload", {
         method: "POST",
         body: formData,
+        credentials: "include",
       });
 
       if (!res.ok) throw new Error("Upload failed");
@@ -168,6 +174,8 @@ export function ItemDialog({ item, trigger, open, onOpenChange }: ItemDialogProp
     }
     setDialogOpen(false);
   };
+
+  const defaultStoreIdValue = form.watch("defaultStoreId");
 
   return (
     <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -210,34 +218,58 @@ export function ItemDialog({ item, trigger, open, onOpenChange }: ItemDialogProp
               )}
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="category">Category</Label>
-              <Select value={categoryMode} onValueChange={handleCategorySelect}>
-                <SelectTrigger
-                  id="category"
-                  data-testid="select-category"
-                  className="bg-secondary/50 border-transparent focus:border-primary focus:bg-background transition-colors h-10"
-                >
-                  <SelectValue placeholder="Select a category..." />
-                </SelectTrigger>
-                <SelectContent className="rounded-xl border-border/50 shadow-xl">
-                  {PRESET_CATEGORIES.map((cat) => (
-                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                  ))}
-                  <SelectItem value="custom">Custom...</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="category">Category</Label>
+                <Select value={categoryMode} onValueChange={handleCategorySelect}>
+                  <SelectTrigger
+                    id="category"
+                    data-testid="select-category"
+                    className="bg-secondary/50 border-transparent focus:border-primary focus:bg-background transition-colors h-10"
+                  >
+                    <SelectValue placeholder="Category..." />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl border-border/50 shadow-xl">
+                    {PRESET_CATEGORIES.map((cat) => (
+                      <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                    ))}
+                    <SelectItem value="custom">Custom...</SelectItem>
+                  </SelectContent>
+                </Select>
+                {categoryMode === "custom" && (
+                  <Input
+                    data-testid="input-custom-category"
+                    placeholder="Enter your category"
+                    value={customCategory}
+                    onChange={handleCustomCategoryChange}
+                    autoFocus
+                    className="bg-secondary/50 border-transparent focus-visible:border-primary focus-visible:bg-background transition-colors"
+                  />
+                )}
+              </div>
 
-              {categoryMode === "custom" && (
-                <Input
-                  data-testid="input-custom-category"
-                  placeholder="Enter your category"
-                  value={customCategory}
-                  onChange={handleCustomCategoryChange}
-                  autoFocus
-                  className="bg-secondary/50 border-transparent focus-visible:border-primary focus-visible:bg-background transition-colors mt-2"
-                />
-              )}
+              <div className="space-y-2">
+                <Label htmlFor="defaultStore">Preferred Store</Label>
+                <Select
+                  value={defaultStoreIdValue != null ? String(defaultStoreIdValue) : "none"}
+                  onValueChange={(val) => form.setValue("defaultStoreId", val === "none" ? null : parseInt(val, 10))}
+                >
+                  <SelectTrigger
+                    id="defaultStore"
+                    data-testid="select-default-store"
+                    className="bg-secondary/50 border-transparent focus:border-primary focus:bg-background transition-colors h-10"
+                  >
+                    <SelectValue placeholder="Any store..." />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl border-border/50 shadow-xl">
+                    <SelectItem value="none">Any store</SelectItem>
+                    {stores?.map((store) => (
+                      <SelectItem key={store.id} value={String(store.id)}>{store.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">Auto-adds to this store's list</p>
+              </div>
             </div>
 
             <div className="space-y-2">
@@ -260,7 +292,7 @@ export function ItemDialog({ item, trigger, open, onOpenChange }: ItemDialogProp
                 data-testid="input-notes"
                 placeholder="Brand preferences, aisles, or quantity..."
                 {...form.register("notes")}
-                className="resize-none min-h-[100px] bg-secondary/50 border-transparent focus-visible:border-primary focus-visible:bg-background transition-colors"
+                className="resize-none min-h-[80px] bg-secondary/50 border-transparent focus-visible:border-primary focus-visible:bg-background transition-colors"
               />
             </div>
 

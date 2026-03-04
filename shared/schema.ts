@@ -19,6 +19,7 @@ export const accountUsers = pgTable("account_users", {
 export const items = pgTable("items", {
   id: serial("id").primaryKey(),
   accountId: integer("account_id"),
+  defaultStoreId: integer("default_store_id"),
   name: text("name").notNull(),
   category: text("category"),
   notes: text("notes"),
