@@ -91,17 +91,19 @@ export function ItemCard({ item }: ItemCardProps) {
           </DropdownMenu>
         </div>
 
-        <div className="w-full aspect-[4/1] bg-secondary/30 flex items-center justify-center overflow-hidden shrink-0">
-          {item.imageUrl && !imageError ? (
-            <img
-              src={item.imageUrl}
-              alt={item.name}
-              onError={() => setImageError(true)}
-              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-            />
-          ) : (
-            <Package className="w-4 h-4 text-muted-foreground/50" />
-          )}
+        <div className="flex justify-center pt-4 pb-1 shrink-0">
+          <div className="w-16 h-16 rounded-xl bg-secondary/30 flex items-center justify-center overflow-hidden">
+            {item.imageUrl && !imageError ? (
+              <img
+                src={item.imageUrl}
+                alt={item.name}
+                onError={() => setImageError(true)}
+                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+              />
+            ) : (
+              <Package className="w-4 h-4 text-muted-foreground/50" />
+            )}
+          </div>
         </div>
 
         <div className="flex flex-col flex-1 p-5">
