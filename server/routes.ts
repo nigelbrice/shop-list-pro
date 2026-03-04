@@ -6,6 +6,7 @@ import { z } from "zod";
 import multer from "multer";
 import path from "path";
 import fs from "fs";
+import { addClient, removeClient, broadcast, getClientCount } from "./sse";
 
 const uploadDir = path.join(process.cwd(), "client", "public", "uploads");
 if (!fs.existsSync(uploadDir)) {
@@ -36,6 +37,21 @@ export async function registerRoutes(
     res.json({ imageUrl });
   });
 
+  app.get("/api/events", (req, res) => {
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+    res.flushHeaders();
+
+    res.write(`event: presence\ndata: ${JSON.stringify({ count: getClientCount() + 1 })}\n\n`);
+
+    addClient(res);
+
+    req.on("close", () => {
+      removeClient(res);
+    });
+  });
+
   app.get(api.items.list.path, async (req, res) => {
     try {
       const itemsList = await storage.getItems();
@@ -49,6 +65,7 @@ export async function registerRoutes(
     try {
       const { orderedIds } = api.items.reorder.input.parse(req.body);
       await storage.reorderListItems(orderedIds);
+      broadcast({ type: "item:reordered", data: { orderedIds } });
       res.json({ success: true });
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -62,6 +79,7 @@ export async function registerRoutes(
     try {
       const input = api.items.create.input.parse(req.body);
       const item = await storage.createItem(input);
+      broadcast({ type: "item:created", data: item as Record<string, unknown> });
       res.status(201).json(item);
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -86,6 +104,7 @@ export async function registerRoutes(
       if (!item) {
         return res.status(404).json({ message: "Item not found" });
       }
+      broadcast({ type: "item:updated", data: item as Record<string, unknown> });
       res.json(item);
     } catch (err) {
       if (err instanceof z.ZodError) {
@@ -111,6 +130,7 @@ export async function registerRoutes(
       }
       
       await storage.deleteItem(id);
+      broadcast({ type: "item:deleted", data: { id } });
       res.status(204).send();
     } catch (err) {
       res.status(500).json({ message: "Failed to delete item" });
