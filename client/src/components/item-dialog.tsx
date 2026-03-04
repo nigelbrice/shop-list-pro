@@ -47,6 +47,7 @@ export function ItemDialog({ item, trigger, open, onOpenChange }: ItemDialogProp
       name: "",
       notes: "",
       imageUrl: "",
+      quantity: "1",
       inShoppingList: false,
     },
   });
@@ -93,6 +94,7 @@ export function ItemDialog({ item, trigger, open, onOpenChange }: ItemDialogProp
           name: item.name,
           notes: item.notes || "",
           imageUrl: item.imageUrl || "",
+          quantity: item.quantity || "1",
           inShoppingList: item.inShoppingList,
         });
       } else {
@@ -100,6 +102,7 @@ export function ItemDialog({ item, trigger, open, onOpenChange }: ItemDialogProp
           name: "",
           notes: "",
           imageUrl: "",
+          quantity: "1",
           inShoppingList: false,
         });
       }
@@ -153,6 +156,16 @@ export function ItemDialog({ item, trigger, open, onOpenChange }: ItemDialogProp
               {form.formState.errors.name && (
                 <p className="text-sm text-destructive">{form.formState.errors.name.message}</p>
               )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="quantity">Quantity</Label>
+              <Input
+                id="quantity"
+                placeholder="e.g. 2, 500g, 1 bottle"
+                {...form.register("quantity")}
+                className="bg-secondary/50 border-transparent focus-visible:border-primary focus-visible:bg-background transition-colors"
+              />
             </div>
 
             <div className="space-y-2">

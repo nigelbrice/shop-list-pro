@@ -73,9 +73,14 @@ export function ItemCard({ item, viewMode = "grid" }: ItemCardProps) {
         </div>
 
         <div className="flex flex-col flex-1 justify-center min-w-0">
-          <h3 className="font-bold text-foreground text-base truncate">
-            {item.name}
-          </h3>
+          <div className="flex items-center gap-2">
+            <h3 className="font-bold text-foreground text-base truncate">
+              {item.name}
+            </h3>
+            <span className="text-xs font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-full whitespace-nowrap">
+              x{item.quantity}
+            </span>
+          </div>
           {item.notes && (
             <p className="text-xs text-muted-foreground truncate">
               {item.notes}

@@ -7,6 +7,7 @@ export const items = pgTable("items", {
   name: text("name").notNull(),
   notes: text("notes"),
   imageUrl: text("image_url"),
+  quantity: text("quantity").default("1").notNull(),
   inShoppingList: boolean("in_shopping_list").default(false).notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
