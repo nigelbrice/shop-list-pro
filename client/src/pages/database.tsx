@@ -60,10 +60,10 @@ export default function Database() {
   }
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="space-y-4 sm:space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
 
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6">
-        <div>
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 sm:gap-6">
+        <div className="hidden sm:block">
           <h1 className="text-3xl sm:text-4xl font-bold font-display text-foreground flex items-center gap-2">
             <DbIcon className="w-4 h-4 text-primary/80" />
             Grocery Index

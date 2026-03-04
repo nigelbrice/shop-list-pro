@@ -170,7 +170,7 @@ export function Layout({ children, auth }: { children: React.ReactNode; auth: Au
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <header className="sticky top-0 z-40 w-full backdrop-blur-xl bg-background/80 border-b border-border">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-12 sm:h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground">
               <ListChecks className="w-5 h-5" />
@@ -221,7 +221,7 @@ export function Layout({ children, auth }: { children: React.ReactNode; auth: Au
         </div>
       </header>
 
-      <main className="flex-1 max-w-5xl w-full mx-auto p-4 sm:p-6 lg:p-8">
+      <main className="flex-1 max-w-5xl w-full mx-auto p-3 sm:p-6 lg:p-8">
         {children}
       </main>
     </div>

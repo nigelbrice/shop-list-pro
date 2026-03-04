@@ -201,7 +201,7 @@ function StoreTabs({
             onClick={() => onSelect(store.id)}
             data-testid={`tab-store-${store.id}`}
             className={cn(
-              "flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-semibold whitespace-nowrap transition-all duration-200 shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+              "flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2.5 rounded-2xl text-sm font-semibold whitespace-nowrap transition-all duration-200 shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
               isActive
                 ? "bg-primary text-primary-foreground shadow-md shadow-primary/20"
                 : "bg-card border border-border/50 text-muted-foreground hover:text-foreground hover:border-border hover:shadow-sm"
@@ -393,9 +393,9 @@ export default function ShoppingList() {
   const hasNoStores = !stores || stores.length === 0;
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+    <div className="max-w-3xl mx-auto space-y-3 sm:space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
 
-      <div className="text-center sm:text-left pt-4 pb-2 border-b border-border/50">
+      <div className="hidden sm:block text-center sm:text-left pt-4 pb-2 border-b border-border/50">
         <h1 className="text-3xl sm:text-5xl font-bold font-display text-foreground flex flex-col sm:flex-row items-center sm:items-end gap-3 sm:gap-4 justify-center sm:justify-start">
           <ShoppingBag className="w-10 h-10 sm:w-12 sm:h-12 text-primary" />
           Shopping List
