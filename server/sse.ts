@@ -13,19 +13,26 @@ export type SSEEvent =
   | { type: "store:list:reordered"; data: { storeId: number; orderedIds: number[] } }
   | { type: "presence"; data: { count: number } };
 
-const clients = new Set<Response>();
+const clientsByAccount = new Map<number, Set<Response>>();
 
-export function addClient(res: Response) {
-  clients.add(res);
-  broadcastPresence();
+export function addClient(res: Response, accountId: number) {
+  if (!clientsByAccount.has(accountId)) clientsByAccount.set(accountId, new Set());
+  clientsByAccount.get(accountId)!.add(res);
+  broadcastPresence(accountId);
 }
 
-export function removeClient(res: Response) {
-  clients.delete(res);
-  broadcastPresence();
+export function removeClient(res: Response, accountId: number) {
+  const set = clientsByAccount.get(accountId);
+  if (set) {
+    set.delete(res);
+    if (set.size === 0) clientsByAccount.delete(accountId);
+    else broadcastPresence(accountId);
+  }
 }
 
-export function broadcast(event: SSEEvent) {
+export function broadcast(event: SSEEvent, accountId: number) {
+  const clients = clientsByAccount.get(accountId);
+  if (!clients) return;
   const payload = `event: ${event.type}\ndata: ${JSON.stringify(event.data)}\n\n`;
   for (const res of clients) {
     try {
@@ -36,10 +43,11 @@ export function broadcast(event: SSEEvent) {
   }
 }
 
-function broadcastPresence() {
-  broadcast({ type: "presence", data: { count: clients.size } });
+function broadcastPresence(accountId: number) {
+  const count = clientsByAccount.get(accountId)?.size ?? 0;
+  broadcast({ type: "presence", data: { count } }, accountId);
 }
 
-export function getClientCount() {
-  return clients.size;
+export function getClientCount(accountId: number) {
+  return clientsByAccount.get(accountId)?.size ?? 0;
 }

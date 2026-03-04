@@ -1,17 +1,29 @@
 import { db } from "./db";
-import { items, stores, storeListItems, type Item, type InsertItem, type UpdateItemRequest, type Store, type StoreWithCount, type StoreListItem, type StoreListItemWithItem } from "@shared/schema";
-import { eq, asc, sql } from "drizzle-orm";
+import {
+  accounts, accountUsers, items, stores, storeListItems,
+  type Account, type AccountUser, type Item, type InsertItem, type UpdateItemRequest,
+  type Store, type StoreWithCount, type StoreListItem, type StoreListItemWithItem,
+} from "@shared/schema";
+import { eq, asc, sql, isNull, or } from "drizzle-orm";
 
 export interface IStorage {
-  getItems(): Promise<Item[]>;
+  findAccountByName(name: string): Promise<Account | undefined>;
+  findAccountById(id: number): Promise<Account | undefined>;
+  createAccount(name: string, passwordHash: string): Promise<Account>;
+  getAccountUsers(accountId: number): Promise<AccountUser[]>;
+  createAccountUser(accountId: number, name: string): Promise<AccountUser>;
+  deleteAccountUser(id: number): Promise<void>;
+  getAccountUserCount(accountId: number): Promise<number>;
+
+  getItems(accountId: number): Promise<Item[]>;
   getItem(id: number): Promise<Item | undefined>;
-  createItem(item: InsertItem): Promise<Item>;
+  createItem(item: InsertItem, accountId: number): Promise<Item>;
   updateItem(id: number, updates: UpdateItemRequest): Promise<Item | undefined>;
   deleteItem(id: number): Promise<void>;
   reorderListItems(orderedIds: number[]): Promise<void>;
 
-  getStores(): Promise<StoreWithCount[]>;
-  createStore(name: string): Promise<Store>;
+  getStores(accountId: number): Promise<StoreWithCount[]>;
+  createStore(name: string, accountId: number): Promise<Store>;
   deleteStore(id: number): Promise<void>;
 
   getStoreList(storeId: number): Promise<StoreListItemWithItem[]>;
@@ -22,8 +34,44 @@ export interface IStorage {
 }
 
 export class DatabaseStorage implements IStorage {
-  async getItems(): Promise<Item[]> {
-    return await db.select().from(items);
+  async findAccountByName(name: string): Promise<Account | undefined> {
+    const [account] = await db.select().from(accounts).where(eq(accounts.name, name));
+    return account;
+  }
+
+  async findAccountById(id: number): Promise<Account | undefined> {
+    const [account] = await db.select().from(accounts).where(eq(accounts.id, id));
+    return account;
+  }
+
+  async createAccount(name: string, passwordHash: string): Promise<Account> {
+    const [account] = await db.insert(accounts).values({ name, passwordHash }).returning();
+    return account;
+  }
+
+  async getAccountUsers(accountId: number): Promise<AccountUser[]> {
+    return await db.select().from(accountUsers).where(eq(accountUsers.accountId, accountId)).orderBy(asc(accountUsers.createdAt));
+  }
+
+  async createAccountUser(accountId: number, name: string): Promise<AccountUser> {
+    const [user] = await db.insert(accountUsers).values({ accountId, name }).returning();
+    return user;
+  }
+
+  async deleteAccountUser(id: number): Promise<void> {
+    await db.delete(accountUsers).where(eq(accountUsers.id, id));
+  }
+
+  async getAccountUserCount(accountId: number): Promise<number> {
+    const [row] = await db
+      .select({ count: sql<number>`cast(count(*) as int)` })
+      .from(accountUsers)
+      .where(eq(accountUsers.accountId, accountId));
+    return row?.count ?? 0;
+  }
+
+  async getItems(accountId: number): Promise<Item[]> {
+    return await db.select().from(items).where(eq(items.accountId, accountId));
   }
 
   async getItem(id: number): Promise<Item | undefined> {
@@ -31,8 +79,8 @@ export class DatabaseStorage implements IStorage {
     return item;
   }
 
-  async createItem(insertItem: InsertItem): Promise<Item> {
-    const [item] = await db.insert(items).values(insertItem).returning();
+  async createItem(insertItem: InsertItem, accountId: number): Promise<Item> {
+    const [item] = await db.insert(items).values({ ...insertItem, accountId }).returning();
     return item;
   }
 
@@ -54,22 +102,24 @@ export class DatabaseStorage implements IStorage {
     );
   }
 
-  async getStores(): Promise<StoreWithCount[]> {
+  async getStores(accountId: number): Promise<StoreWithCount[]> {
     const rows = await db
       .select({
         id: stores.id,
+        accountId: stores.accountId,
         name: stores.name,
         itemCount: sql<number>`cast(count(${storeListItems.id}) as int)`,
       })
       .from(stores)
       .leftJoin(storeListItems, eq(storeListItems.storeId, stores.id))
-      .groupBy(stores.id, stores.name)
+      .where(eq(stores.accountId, accountId))
+      .groupBy(stores.id, stores.name, stores.accountId)
       .orderBy(asc(stores.id));
     return rows;
   }
 
-  async createStore(name: string): Promise<Store> {
-    const [store] = await db.insert(stores).values({ name }).returning();
+  async createStore(name: string, accountId: number): Promise<Store> {
+    const [store] = await db.insert(stores).values({ name, accountId }).returning();
     return store;
   }
 
@@ -99,9 +149,8 @@ export class DatabaseStorage implements IStorage {
       .where(eq(storeListItems.storeId, storeId))
       .orderBy(asc(storeListItems.listOrder));
 
-    const currentList = existing.filter(r => r.storeId === storeId);
-    const maxOrder = currentList.length > 0
-      ? Math.max(...currentList.map(r => r.listOrder ?? -1))
+    const maxOrder = existing.length > 0
+      ? Math.max(...existing.map(r => r.listOrder ?? -1))
       : -1;
 
     const [listItem] = await db
@@ -134,3 +183,24 @@ export class DatabaseStorage implements IStorage {
 }
 
 export const storage = new DatabaseStorage();
+
+export async function migrateOrphanedData() {
+  try {
+    const bcrypt = await import("bcryptjs");
+    const orphanedItems = await db.select({ id: items.id }).from(items).where(isNull(items.accountId)).limit(1);
+    const orphanedStores = await db.select({ id: stores.id }).from(stores).where(isNull(stores.accountId)).limit(1);
+    if (orphanedItems.length === 0 && orphanedStores.length === 0) return;
+
+    let demoAccount = await storage.findAccountByName("Demo");
+    if (!demoAccount) {
+      const passwordHash = await bcrypt.hash("demo123", 10);
+      demoAccount = await storage.createAccount("Demo", passwordHash);
+      await storage.createAccountUser(demoAccount.id, "Owner");
+    }
+    await db.update(items).set({ accountId: demoAccount.id }).where(isNull(items.accountId));
+    await db.update(stores).set({ accountId: demoAccount.id }).where(isNull(stores.accountId));
+    console.log(`Migrated orphaned data to Demo account (id=${demoAccount.id}). Login: name="Demo", password="demo123"`);
+  } catch (err) {
+    console.error("Migration failed:", err);
+  }
+}

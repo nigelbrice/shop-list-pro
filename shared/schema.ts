@@ -2,8 +2,23 @@ import { pgTable, text, serial, boolean, timestamp, integer } from "drizzle-orm/
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+export const accounts = pgTable("accounts", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull().unique(),
+  passwordHash: text("password_hash").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const accountUsers = pgTable("account_users", {
+  id: serial("id").primaryKey(),
+  accountId: integer("account_id").notNull(),
+  name: text("name").notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
 export const items = pgTable("items", {
   id: serial("id").primaryKey(),
+  accountId: integer("account_id"),
   name: text("name").notNull(),
   category: text("category"),
   notes: text("notes"),
@@ -16,6 +31,7 @@ export const items = pgTable("items", {
 
 export const stores = pgTable("stores", {
   id: serial("id").primaryKey(),
+  accountId: integer("account_id"),
   name: text("name").notNull(),
 });
 
@@ -27,9 +43,12 @@ export const storeListItems = pgTable("store_list_items", {
   listOrder: integer("list_order"),
 });
 
-export const insertItemSchema = createInsertSchema(items).omit({ id: true, createdAt: true });
-export const insertStoreSchema = createInsertSchema(stores).omit({ id: true });
+export const insertItemSchema = createInsertSchema(items).omit({ id: true, createdAt: true, accountId: true });
+export const insertStoreSchema = createInsertSchema(stores).omit({ id: true, accountId: true });
 export const insertStoreListItemSchema = createInsertSchema(storeListItems).omit({ id: true });
+
+export type Account = typeof accounts.$inferSelect;
+export type AccountUser = typeof accountUsers.$inferSelect;
 
 export type Item = typeof items.$inferSelect;
 export type InsertItem = z.infer<typeof insertItemSchema>;
