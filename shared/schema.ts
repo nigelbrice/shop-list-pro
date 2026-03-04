@@ -14,8 +14,30 @@ export const items = pgTable("items", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const stores = pgTable("stores", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(),
+});
+
+export const storeListItems = pgTable("store_list_items", {
+  id: serial("id").primaryKey(),
+  storeId: integer("store_id").notNull(),
+  itemId: integer("item_id").notNull(),
+  quantity: integer("quantity").default(1).notNull(),
+  listOrder: integer("list_order"),
+});
+
 export const insertItemSchema = createInsertSchema(items).omit({ id: true, createdAt: true });
+export const insertStoreSchema = createInsertSchema(stores).omit({ id: true });
+export const insertStoreListItemSchema = createInsertSchema(storeListItems).omit({ id: true });
 
 export type Item = typeof items.$inferSelect;
 export type InsertItem = z.infer<typeof insertItemSchema>;
 export type UpdateItemRequest = Partial<InsertItem>;
+
+export type Store = typeof stores.$inferSelect;
+export type InsertStore = z.infer<typeof insertStoreSchema>;
+
+export type StoreListItem = typeof storeListItems.$inferSelect;
+export type InsertStoreListItem = z.infer<typeof insertStoreListItemSchema>;
+export type StoreListItemWithItem = StoreListItem & { item: Item };

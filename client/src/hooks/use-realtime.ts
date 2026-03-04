@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { api } from "@shared/routes";
-import type { Item } from "@shared/schema";
+import type { Item, StoreListItemWithItem, Store } from "@shared/schema";
 
 interface PresenceData { count: number }
 
@@ -47,15 +47,62 @@ export function useRealtime(onPresenceChange: (count: number) => void) {
       queryClient.invalidateQueries({ queryKey: [api.items.list.path] });
     });
 
+    es.addEventListener("store:created", (e) => {
+      const store: Store = JSON.parse(e.data);
+      queryClient.setQueryData<Store[]>([api.stores.list.path], (old) => {
+        if (!old) return [store];
+        if (old.some(s => s.id === store.id)) return old;
+        return [...old, store];
+      });
+    });
+
+    es.addEventListener("store:deleted", (e) => {
+      const { id }: { id: number } = JSON.parse(e.data);
+      queryClient.setQueryData<Store[]>([api.stores.list.path], (old) => {
+        if (!old) return old;
+        return old.filter(s => s.id !== id);
+      });
+      queryClient.removeQueries({ queryKey: [api.stores.getList.path, id] });
+    });
+
+    es.addEventListener("store:list:added", (e) => {
+      const listItem: StoreListItemWithItem = JSON.parse(e.data);
+      queryClient.setQueryData<StoreListItemWithItem[]>(
+        [api.stores.getList.path, listItem.storeId],
+        (old) => {
+          if (!old) return [listItem];
+          if (old.some(i => i.id === listItem.id)) return old;
+          return [...old, listItem];
+        }
+      );
+    });
+
+    es.addEventListener("store:list:updated", (e) => {
+      const listItem: StoreListItemWithItem = JSON.parse(e.data);
+      queryClient.setQueryData<StoreListItemWithItem[]>(
+        [api.stores.getList.path, listItem.storeId],
+        (old) => old ? old.map(i => i.id === listItem.id ? listItem : i) : old
+      );
+    });
+
+    es.addEventListener("store:list:removed", (e) => {
+      const { storeId, listItemId }: { storeId: number; listItemId: number } = JSON.parse(e.data);
+      queryClient.setQueryData<StoreListItemWithItem[]>(
+        [api.stores.getList.path, storeId],
+        (old) => old ? old.filter(i => i.id !== listItemId) : old
+      );
+    });
+
+    es.addEventListener("store:list:reordered", (e) => {
+      const { storeId }: { storeId: number } = JSON.parse(e.data);
+      queryClient.invalidateQueries({ queryKey: [api.stores.getList.path, storeId] });
+    });
+
     es.onerror = () => {
       es.close();
-      setTimeout(() => {
-        esRef.current = new EventSource("/api/events");
-      }, 3000);
+      setTimeout(() => { esRef.current = new EventSource("/api/events"); }, 3000);
     };
 
-    return () => {
-      es.close();
-    };
+    return () => { es.close(); };
   }, []);
 }

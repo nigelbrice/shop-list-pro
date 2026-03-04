@@ -5,6 +5,12 @@ export type SSEEvent =
   | { type: "item:updated"; data: Record<string, unknown> }
   | { type: "item:deleted"; data: { id: number } }
   | { type: "item:reordered"; data: { orderedIds: number[] } }
+  | { type: "store:created"; data: Record<string, unknown> }
+  | { type: "store:deleted"; data: { id: number } }
+  | { type: "store:list:added"; data: Record<string, unknown> }
+  | { type: "store:list:updated"; data: Record<string, unknown> }
+  | { type: "store:list:removed"; data: { storeId: number; listItemId: number } }
+  | { type: "store:list:reordered"; data: { storeId: number; orderedIds: number[] } }
   | { type: "presence"; data: { count: number } };
 
 const clients = new Set<Response>();

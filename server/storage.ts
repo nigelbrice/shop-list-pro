@@ -1,6 +1,6 @@
 import { db } from "./db";
-import { items, type Item, type InsertItem, type UpdateItemRequest } from "@shared/schema";
-import { eq, asc, desc, sql } from "drizzle-orm";
+import { items, stores, storeListItems, type Item, type InsertItem, type UpdateItemRequest, type Store, type StoreListItem, type StoreListItemWithItem } from "@shared/schema";
+import { eq, asc } from "drizzle-orm";
 
 export interface IStorage {
   getItems(): Promise<Item[]>;
@@ -9,6 +9,16 @@ export interface IStorage {
   updateItem(id: number, updates: UpdateItemRequest): Promise<Item | undefined>;
   deleteItem(id: number): Promise<void>;
   reorderListItems(orderedIds: number[]): Promise<void>;
+
+  getStores(): Promise<Store[]>;
+  createStore(name: string): Promise<Store>;
+  deleteStore(id: number): Promise<void>;
+
+  getStoreList(storeId: number): Promise<StoreListItemWithItem[]>;
+  addToStoreList(storeId: number, itemId: number, quantity: number): Promise<StoreListItem>;
+  updateStoreListItem(id: number, updates: { quantity?: number }): Promise<StoreListItem | undefined>;
+  removeFromStoreList(id: number): Promise<void>;
+  reorderStoreList(storeId: number, orderedIds: number[]): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -27,14 +37,12 @@ export class DatabaseStorage implements IStorage {
   }
 
   async updateItem(id: number, updates: UpdateItemRequest): Promise<Item | undefined> {
-    const [item] = await db.update(items)
-      .set(updates)
-      .where(eq(items.id, id))
-      .returning();
+    const [item] = await db.update(items).set(updates).where(eq(items.id, id)).returning();
     return item;
   }
 
   async deleteItem(id: number): Promise<void> {
+    await db.delete(storeListItems).where(eq(storeListItems.itemId, id));
     await db.delete(items).where(eq(items.id, id));
   }
 
@@ -42,6 +50,74 @@ export class DatabaseStorage implements IStorage {
     await Promise.all(
       orderedIds.map((id, index) =>
         db.update(items).set({ listOrder: index }).where(eq(items.id, id))
+      )
+    );
+  }
+
+  async getStores(): Promise<Store[]> {
+    return await db.select().from(stores).orderBy(asc(stores.id));
+  }
+
+  async createStore(name: string): Promise<Store> {
+    const [store] = await db.insert(stores).values({ name }).returning();
+    return store;
+  }
+
+  async deleteStore(id: number): Promise<void> {
+    await db.delete(storeListItems).where(eq(storeListItems.storeId, id));
+    await db.delete(stores).where(eq(stores.id, id));
+  }
+
+  async getStoreList(storeId: number): Promise<StoreListItemWithItem[]> {
+    const rows = await db
+      .select()
+      .from(storeListItems)
+      .innerJoin(items, eq(storeListItems.itemId, items.id))
+      .where(eq(storeListItems.storeId, storeId))
+      .orderBy(asc(storeListItems.listOrder));
+
+    return rows.map(row => ({
+      ...row.store_list_items,
+      item: row.items,
+    }));
+  }
+
+  async addToStoreList(storeId: number, itemId: number, quantity: number): Promise<StoreListItem> {
+    const existing = await db
+      .select()
+      .from(storeListItems)
+      .where(eq(storeListItems.storeId, storeId))
+      .orderBy(asc(storeListItems.listOrder));
+
+    const currentList = existing.filter(r => r.storeId === storeId);
+    const maxOrder = currentList.length > 0
+      ? Math.max(...currentList.map(r => r.listOrder ?? -1))
+      : -1;
+
+    const [listItem] = await db
+      .insert(storeListItems)
+      .values({ storeId, itemId, quantity, listOrder: maxOrder + 1 })
+      .returning();
+    return listItem;
+  }
+
+  async updateStoreListItem(id: number, updates: { quantity?: number }): Promise<StoreListItem | undefined> {
+    const [item] = await db
+      .update(storeListItems)
+      .set(updates)
+      .where(eq(storeListItems.id, id))
+      .returning();
+    return item;
+  }
+
+  async removeFromStoreList(id: number): Promise<void> {
+    await db.delete(storeListItems).where(eq(storeListItems.id, id));
+  }
+
+  async reorderStoreList(storeId: number, orderedIds: number[]): Promise<void> {
+    await Promise.all(
+      orderedIds.map((id, index) =>
+        db.update(storeListItems).set({ listOrder: index }).where(eq(storeListItems.id, id))
       )
     );
   }

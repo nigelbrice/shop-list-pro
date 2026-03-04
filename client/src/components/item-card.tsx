@@ -1,7 +1,9 @@
 import { useState } from "react";
-import { Package, MoreVertical, Pencil, Trash2, Loader2, Check, Plus, Minus } from "lucide-react";
+import { Package, MoreVertical, Pencil, Trash2, Loader2, Check, Plus } from "lucide-react";
 import type { Item } from "@shared/schema";
 import { useUpdateItem, useDeleteItem } from "@/hooks/use-items";
+import { useStoreContext } from "@/context/store-context";
+import { useAddToStoreList, useRemoveFromStoreList } from "@/hooks/use-stores";
 import { cn } from "@/lib/utils";
 import {
   DropdownMenu,
@@ -16,132 +18,42 @@ import { ItemDialog } from "./item-dialog";
 
 interface ItemCardProps {
   item: Item;
-  viewMode?: "grid" | "list";
+  listItemId?: number | null;
 }
 
-export function ItemCard({ item, viewMode = "grid" }: ItemCardProps) {
+export function ItemCard({ item, listItemId }: ItemCardProps) {
   const updateMutation = useUpdateItem();
   const deleteMutation = useDeleteItem();
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [imageError, setImageError] = useState(false);
 
-  const toggleShoppingList = () => {
-    updateMutation.mutate({
-      id: item.id,
-      inShoppingList: !item.inShoppingList,
-    });
+  const { selectedStoreId } = useStoreContext();
+  const addToListMutation = useAddToStoreList(selectedStoreId);
+  const removeFromListMutation = useRemoveFromStoreList(selectedStoreId);
+
+  const isOnList = listItemId != null;
+  const isListPending = addToListMutation.isPending || removeFromListMutation.isPending;
+
+  const handleToggleList = () => {
+    if (!selectedStoreId) return;
+    if (isOnList) {
+      removeFromListMutation.mutate(listItemId);
+    } else {
+      addToListMutation.mutate({ itemId: item.id, quantity: item.quantity });
+    }
   };
-
-  const updateQuantity = (newQuantity: number) => {
-    if (newQuantity < 1) return;
-    updateMutation.mutate({
-      id: item.id,
-      quantity: newQuantity,
-    });
-  };
-
-  const isList = viewMode === "list";
-
-  if (isList) {
-    return (
-      <div 
-        className={cn(
-          "group relative bg-card rounded-2xl border border-border/40 overflow-hidden transition-all duration-300 flex flex-row items-center p-3 sm:p-4 gap-4",
-          "shadow-md shadow-primary/5 border-primary/20"
-        )}
-        data-testid={`item-card-${item.id}`}
-      >
-        <div className="flex items-center justify-center shrink-0">
-          <Button 
-            variant="ghost" 
-            size="icon"
-            onClick={toggleShoppingList}
-            className="w-10 h-10 rounded-full border-2 border-primary/20 hover:bg-primary/10 hover:border-primary transition-all duration-200"
-            disabled={updateMutation.isPending}
-            data-testid={`button-check-${item.id}`}
-          >
-            {updateMutation.isPending ? (
-              <Loader2 className="w-5 h-5 animate-spin text-primary" />
-            ) : (
-              <Check className="w-5 h-5 text-primary" />
-            )}
-          </Button>
-        </div>
-
-        <div className={cn(
-          "bg-secondary/30 flex items-center justify-center overflow-hidden shrink-0 w-12 h-12 rounded-xl"
-        )}>
-          {item.imageUrl && !imageError ? (
-            <img 
-              src={item.imageUrl} 
-              alt={item.name}
-              onError={() => setImageError(true)}
-              className="w-full h-full object-cover"
-            />
-          ) : (
-            <Package className="w-6 h-6 text-muted-foreground/50" />
-          )}
-        </div>
-
-        <div className="flex flex-col flex-1 justify-center min-w-0">
-          <h3 className="font-bold text-foreground text-base truncate" data-testid={`text-name-${item.id}`}>
-            {item.name}
-          </h3>
-          {item.category && (
-            <span className="text-xs text-primary/70 font-medium truncate" data-testid={`text-category-${item.id}`}>
-              {item.category}
-            </span>
-          )}
-          {item.notes && (
-            <p className="text-xs text-muted-foreground truncate">
-              {item.notes}
-            </p>
-          )}
-        </div>
-
-        <div className="flex items-center gap-1 sm:gap-2 bg-secondary/30 rounded-full px-1 py-1">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="w-7 h-7 sm:w-8 sm:h-8 rounded-full hover:bg-background shadow-sm"
-            onClick={() => updateQuantity(item.quantity - 1)}
-            disabled={item.quantity <= 1 || updateMutation.isPending}
-            data-testid={`button-decrease-${item.id}`}
-          >
-            <Minus className="w-3 h-3 sm:w-4 sm:h-4" />
-          </Button>
-          <span className="w-6 sm:w-8 text-center font-bold text-sm sm:text-base tabular-nums" data-testid={`text-quantity-${item.id}`}>
-            {item.quantity}
-          </span>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="w-7 h-7 sm:w-8 sm:h-8 rounded-full hover:bg-background shadow-sm"
-            onClick={() => updateQuantity(item.quantity + 1)}
-            disabled={updateMutation.isPending}
-            data-testid={`button-increase-${item.id}`}
-          >
-            <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
-          </Button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <>
-      <div 
+      <div
         className={cn(
           "group relative bg-card rounded-2xl border border-border/40 overflow-hidden transition-all duration-300",
-          item.inShoppingList ? "shadow-md shadow-primary/5 border-primary/20" : "hover:border-border/80 hover:shadow-lg hover:shadow-black/5",
+          isOnList ? "shadow-md shadow-primary/5 border-primary/20" : "hover:border-border/80 hover:shadow-lg hover:shadow-black/5",
           "flex flex-col flex-1"
         )}
         data-testid={`item-card-${item.id}`}
       >
-        <div className={cn(
-          "absolute z-10 transition-opacity duration-200",
-          "top-3 right-3 opacity-0 group-hover:opacity-100 focus-within:opacity-100"
-        )}>
+        <div className="absolute z-10 top-3 right-3 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity duration-200">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button size="icon" variant="secondary" className="w-8 h-8 rounded-full bg-background/80 backdrop-blur-sm shadow-sm hover:bg-background focus-ring" data-testid={`button-menu-${item.id}`}>
@@ -153,7 +65,7 @@ export function ItemCard({ item, viewMode = "grid" }: ItemCardProps) {
                 <Pencil className="w-4 h-4 mr-2" /> Edit
               </DropdownMenuItem>
               <DropdownMenuSeparator className="bg-border/50" />
-              <DropdownMenuItem 
+              <DropdownMenuItem
                 onClick={() => deleteMutation.mutate(item.id)}
                 className="text-destructive focus:bg-destructive/10 rounded-lg cursor-pointer"
                 disabled={deleteMutation.isPending}
@@ -168,8 +80,8 @@ export function ItemCard({ item, viewMode = "grid" }: ItemCardProps) {
 
         <div className="w-full aspect-[4/3] bg-secondary/30 flex items-center justify-center overflow-hidden shrink-0">
           {item.imageUrl && !imageError ? (
-            <img 
-              src={item.imageUrl} 
+            <img
+              src={item.imageUrl}
               alt={item.name}
               onError={() => setImageError(true)}
               className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
@@ -188,7 +100,6 @@ export function ItemCard({ item, viewMode = "grid" }: ItemCardProps) {
           <h3 className="font-bold text-foreground text-lg mb-1" data-testid={`text-name-${item.id}`}>
             {item.name}
           </h3>
-          
           {item.notes && (
             <p className="text-sm text-muted-foreground line-clamp-2 mt-1 mb-4 flex-1">
               {item.notes}
@@ -196,38 +107,42 @@ export function ItemCard({ item, viewMode = "grid" }: ItemCardProps) {
           )}
 
           <div className="mt-auto pt-4 border-t border-border/40">
-            <Button 
-              onClick={toggleShoppingList}
-              disabled={updateMutation.isPending}
-              variant={item.inShoppingList ? "secondary" : "default"}
-              className={cn(
-                "w-full rounded-xl font-medium transition-all duration-300",
-                item.inShoppingList ? "bg-secondary text-secondary-foreground hover:bg-secondary/80" : "hover-lift"
-              )}
-              data-testid={`button-toggle-list-${item.id}`}
-            >
-              {updateMutation.isPending ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : item.inShoppingList ? (
-                <>
-                  <Check className="w-4 h-4 mr-2" />
-                  On List
-                </>
-              ) : (
-                <>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Add to List
-                </>
-              )}
-            </Button>
+            {selectedStoreId ? (
+              <Button
+                onClick={handleToggleList}
+                disabled={isListPending}
+                variant={isOnList ? "secondary" : "default"}
+                className={cn(
+                  "w-full rounded-xl font-medium transition-all duration-300",
+                  isOnList ? "bg-secondary text-secondary-foreground hover:bg-secondary/80" : "hover-lift"
+                )}
+                data-testid={`button-toggle-list-${item.id}`}
+              >
+                {isListPending ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : isOnList ? (
+                  <><Check className="w-4 h-4 mr-2" />On List</>
+                ) : (
+                  <><Plus className="w-4 h-4 mr-2" />Add to List</>
+                )}
+              </Button>
+            ) : (
+              <Button
+                asChild
+                variant="outline"
+                className="w-full rounded-xl font-medium"
+              >
+                <a href="/">Select a store first</a>
+              </Button>
+            )}
           </div>
         </div>
       </div>
 
-      <ItemDialog 
-        item={item} 
-        open={isEditDialogOpen} 
-        onOpenChange={setIsEditDialogOpen} 
+      <ItemDialog
+        item={item}
+        open={isEditDialogOpen}
+        onOpenChange={setIsEditDialogOpen}
       />
     </>
   );

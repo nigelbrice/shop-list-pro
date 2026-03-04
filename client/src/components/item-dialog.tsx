@@ -22,7 +22,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
 import { Plus, Loader2, Camera, X } from "lucide-react";
 
 const PRESET_CATEGORIES = [
@@ -70,7 +69,6 @@ export function ItemDialog({ item, trigger, open, onOpenChange }: ItemDialogProp
       notes: "",
       imageUrl: "",
       quantity: 1,
-      inShoppingList: false,
     },
   });
 
@@ -99,7 +97,6 @@ export function ItemDialog({ item, trigger, open, onOpenChange }: ItemDialogProp
           notes: item.notes || "",
           imageUrl: item.imageUrl || "",
           quantity: item.quantity || 1,
-          inShoppingList: item.inShoppingList,
         });
         initCategoryState(item.category);
       } else {
@@ -109,7 +106,6 @@ export function ItemDialog({ item, trigger, open, onOpenChange }: ItemDialogProp
           notes: "",
           imageUrl: "",
           quantity: 1,
-          inShoppingList: false,
         });
         setCategoryMode("");
         setCustomCategory("");
@@ -319,20 +315,6 @@ export function ItemDialog({ item, trigger, open, onOpenChange }: ItemDialogProp
               </div>
             </div>
 
-            <div className="flex items-center justify-between p-4 rounded-xl border border-border/50 bg-secondary/30">
-              <div className="space-y-0.5">
-                <Label htmlFor="inShoppingList" className="text-base">Add to Shopping List</Label>
-                <p className="text-sm text-muted-foreground">
-                  Include this item in your active shopping list right away.
-                </p>
-              </div>
-              <Switch
-                id="inShoppingList"
-                data-testid="switch-inShoppingList"
-                checked={form.watch("inShoppingList")}
-                onCheckedChange={(checked) => form.setValue("inShoppingList", checked)}
-              />
-            </div>
           </div>
 
           <div className="flex justify-end gap-3 pt-2">
