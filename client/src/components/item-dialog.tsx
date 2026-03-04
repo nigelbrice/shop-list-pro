@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertItemSchema, type Item, type InsertItem } from "@shared/schema";
@@ -16,7 +16,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Plus, Loader2 } from "lucide-react";
+import { Plus, Loader2, Upload, Camera, X, Image as ImageIcon } from "lucide-react";
+import { apiRequest } from "@/lib/queryClient";
 
 interface ItemDialogProps {
   item?: Item;
@@ -27,6 +28,8 @@ interface ItemDialogProps {
 
 export function ItemDialog({ item, trigger, open, onOpenChange }: ItemDialogProps) {
   const [internalOpen, setInternalOpen] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const isControlled = open !== undefined;
   const dialogOpen = isControlled ? open : internalOpen;
@@ -47,6 +50,40 @@ export function ItemDialog({ item, trigger, open, onOpenChange }: ItemDialogProp
       inShoppingList: false,
     },
   });
+
+  const imageUrl = form.watch("imageUrl");
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("image", file);
+
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) throw new Error("Upload failed");
+
+      const data = await res.json();
+      form.setValue("imageUrl", data.imageUrl);
+    } catch (error) {
+      console.error("Upload error:", error);
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const removeImage = () => {
+    form.setValue("imageUrl", "");
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
 
   // Reset form when dialog opens/closes or item changes
   useEffect(() => {
@@ -129,13 +166,54 @@ export function ItemDialog({ item, trigger, open, onOpenChange }: ItemDialogProp
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="imageUrl">Image URL</Label>
-              <Input
-                id="imageUrl"
-                placeholder="https://example.com/image.jpg"
-                {...form.register("imageUrl")}
-                className="bg-secondary/50 border-transparent focus-visible:border-primary focus-visible:bg-background transition-colors"
-              />
+              <Label>Item Photo</Label>
+              <div className="flex flex-col gap-4">
+                {imageUrl ? (
+                  <div className="relative aspect-video rounded-xl overflow-hidden border border-border/50 group/image">
+                    <img 
+                      src={imageUrl} 
+                      alt="Preview" 
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/image:opacity-100 transition-opacity flex items-center justify-center">
+                      <Button 
+                        type="button" 
+                        variant="destructive" 
+                        size="sm" 
+                        onClick={removeImage}
+                        className="rounded-full"
+                      >
+                        <X className="w-4 h-4 mr-2" />
+                        Remove Photo
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div 
+                    onClick={() => fileInputRef.current?.click()}
+                    className="aspect-video rounded-xl border-2 border-dashed border-border/50 bg-secondary/30 flex flex-col items-center justify-center cursor-pointer hover:bg-secondary/50 hover:border-primary/50 transition-all group"
+                  >
+                    {isUploading ? (
+                      <Loader2 className="w-8 h-8 animate-spin text-primary/50" />
+                    ) : (
+                      <>
+                        <div className="w-12 h-12 rounded-full bg-background flex items-center justify-center mb-3 shadow-sm group-hover:scale-110 transition-transform">
+                          <Camera className="w-6 h-6 text-primary" />
+                        </div>
+                        <p className="text-sm font-medium">Click to upload or take a photo</p>
+                        <p className="text-xs text-muted-foreground mt-1">PNG, JPG up to 10MB</p>
+                      </>
+                    )}
+                  </div>
+                )}
+                <input 
+                  type="file" 
+                  ref={fileInputRef}
+                  onChange={handleFileChange}
+                  accept="image/*"
+                  className="hidden"
+                />
+              </div>
             </div>
 
             <div className="flex items-center justify-between p-4 rounded-xl border border-border/50 bg-secondary/30">
