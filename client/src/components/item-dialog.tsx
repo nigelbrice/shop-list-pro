@@ -11,12 +11,32 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Plus, Loader2, Camera, X } from "lucide-react";
+
+const PRESET_CATEGORIES = [
+  "Produce",
+  "Dairy & Eggs",
+  "Meat & Seafood",
+  "Bakery",
+  "Frozen",
+  "Beverages",
+  "Snacks",
+  "Pantry & Dry Goods",
+  "Household",
+  "Personal Care",
+];
 
 interface ItemDialogProps {
   item?: Item;
@@ -28,15 +48,17 @@ interface ItemDialogProps {
 export function ItemDialog({ item, trigger, open, onOpenChange }: ItemDialogProps) {
   const [internalOpen, setInternalOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [categoryMode, setCategoryMode] = useState<string>("");
+  const [customCategory, setCustomCategory] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+
   const isControlled = open !== undefined;
   const dialogOpen = isControlled ? open : internalOpen;
   const setDialogOpen = isControlled ? onOpenChange! : setInternalOpen;
 
   const createMutation = useCreateItem();
   const updateMutation = useUpdateItem();
-  
+
   const isPending = createMutation.isPending || updateMutation.isPending;
   const isEditing = !!item;
 
@@ -53,6 +75,62 @@ export function ItemDialog({ item, trigger, open, onOpenChange }: ItemDialogProp
   });
 
   const imageUrl = form.watch("imageUrl");
+
+  const initCategoryState = (categoryValue: string | null | undefined) => {
+    const val = categoryValue || "";
+    if (!val) {
+      setCategoryMode("");
+      setCustomCategory("");
+    } else if (PRESET_CATEGORIES.includes(val)) {
+      setCategoryMode(val);
+      setCustomCategory("");
+    } else {
+      setCategoryMode("custom");
+      setCustomCategory(val);
+    }
+  };
+
+  useEffect(() => {
+    if (dialogOpen) {
+      if (item) {
+        form.reset({
+          name: item.name,
+          category: item.category || "",
+          notes: item.notes || "",
+          imageUrl: item.imageUrl || "",
+          quantity: item.quantity || 1,
+          inShoppingList: item.inShoppingList,
+        });
+        initCategoryState(item.category);
+      } else {
+        form.reset({
+          name: "",
+          category: "",
+          notes: "",
+          imageUrl: "",
+          quantity: 1,
+          inShoppingList: false,
+        });
+        setCategoryMode("");
+        setCustomCategory("");
+      }
+    }
+  }, [dialogOpen, item, form]);
+
+  const handleCategorySelect = (value: string) => {
+    setCategoryMode(value);
+    if (value === "custom") {
+      form.setValue("category", customCategory);
+    } else {
+      form.setValue("category", value);
+      setCustomCategory("");
+    }
+  };
+
+  const handleCustomCategoryChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setCustomCategory(e.target.value);
+    form.setValue("category", e.target.value);
+  };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -86,30 +164,6 @@ export function ItemDialog({ item, trigger, open, onOpenChange }: ItemDialogProp
     }
   };
 
-  useEffect(() => {
-    if (dialogOpen) {
-      if (item) {
-        form.reset({
-          name: item.name,
-          category: item.category || "",
-          notes: item.notes || "",
-          imageUrl: item.imageUrl || "",
-          quantity: item.quantity || 1,
-          inShoppingList: item.inShoppingList,
-        });
-      } else {
-        form.reset({
-          name: "",
-          category: "",
-          notes: "",
-          imageUrl: "",
-          quantity: 1,
-          inShoppingList: false,
-        });
-      }
-    }
-  }, [dialogOpen, item, form]);
-
   const onSubmit = async (data: InsertItem) => {
     if (isEditing && item) {
       await updateMutation.mutateAsync({ id: item.id, ...data });
@@ -131,15 +185,15 @@ export function ItemDialog({ item, trigger, open, onOpenChange }: ItemDialogProp
           )}
         </DialogTrigger>
       )}
-      
+
       <DialogContent className="sm:max-w-[500px] border-border/50 shadow-2xl">
         <DialogHeader>
           <DialogTitle className="font-display text-2xl">
             {isEditing ? "Edit Item" : "Create New Item"}
           </DialogTitle>
           <DialogDescription>
-            {isEditing 
-              ? "Update the details of your item below." 
+            {isEditing
+              ? "Update the details of your item below."
               : "Add a new item to your database to use in shopping lists."}
           </DialogDescription>
         </DialogHeader>
@@ -162,13 +216,32 @@ export function ItemDialog({ item, trigger, open, onOpenChange }: ItemDialogProp
 
             <div className="space-y-2">
               <Label htmlFor="category">Category</Label>
-              <Input
-                id="category"
-                data-testid="input-category"
-                placeholder="e.g. Dairy, Produce, Beverages"
-                {...form.register("category")}
-                className="bg-secondary/50 border-transparent focus-visible:border-primary focus-visible:bg-background transition-colors"
-              />
+              <Select value={categoryMode} onValueChange={handleCategorySelect}>
+                <SelectTrigger
+                  id="category"
+                  data-testid="select-category"
+                  className="bg-secondary/50 border-transparent focus:border-primary focus:bg-background transition-colors h-10"
+                >
+                  <SelectValue placeholder="Select a category..." />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl border-border/50 shadow-xl">
+                  {PRESET_CATEGORIES.map((cat) => (
+                    <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                  ))}
+                  <SelectItem value="custom">Custom...</SelectItem>
+                </SelectContent>
+              </Select>
+
+              {categoryMode === "custom" && (
+                <Input
+                  data-testid="input-custom-category"
+                  placeholder="Enter your category"
+                  value={customCategory}
+                  onChange={handleCustomCategoryChange}
+                  autoFocus
+                  className="bg-secondary/50 border-transparent focus-visible:border-primary focus-visible:bg-background transition-colors mt-2"
+                />
+              )}
             </div>
 
             <div className="space-y-2">
@@ -200,16 +273,16 @@ export function ItemDialog({ item, trigger, open, onOpenChange }: ItemDialogProp
               <div className="flex flex-col gap-4">
                 {imageUrl ? (
                   <div className="relative aspect-video rounded-xl overflow-hidden border border-border/50 group/image">
-                    <img 
-                      src={imageUrl} 
-                      alt="Preview" 
+                    <img
+                      src={imageUrl}
+                      alt="Preview"
                       className="w-full h-full object-cover"
                     />
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/image:opacity-100 transition-opacity flex items-center justify-center">
-                      <Button 
-                        type="button" 
-                        variant="destructive" 
-                        size="sm" 
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        size="sm"
                         onClick={removeImage}
                         className="rounded-full"
                       >
@@ -219,7 +292,7 @@ export function ItemDialog({ item, trigger, open, onOpenChange }: ItemDialogProp
                     </div>
                   </div>
                 ) : (
-                  <div 
+                  <div
                     onClick={() => fileInputRef.current?.click()}
                     className="aspect-video rounded-xl border-2 border-dashed border-border/50 bg-secondary/30 flex flex-col items-center justify-center cursor-pointer hover:bg-secondary/50 hover:border-primary/50 transition-all group"
                   >
@@ -236,8 +309,8 @@ export function ItemDialog({ item, trigger, open, onOpenChange }: ItemDialogProp
                     )}
                   </div>
                 )}
-                <input 
-                  type="file" 
+                <input
+                  type="file"
                   ref={fileInputRef}
                   onChange={handleFileChange}
                   accept="image/*"
