@@ -14,16 +14,6 @@ export function useStores() {
   });
 }
 
-function adjustStoreCount(
-  queryClient: ReturnType<typeof useQueryClient>,
-  storeId: number,
-  delta: number
-) {
-  queryClient.setQueryData<StoreWithCount[]>([api.stores.list.path], (old) => {
-    if (!old) return old;
-    return old.map(s => s.id === storeId ? { ...s, itemCount: Math.max(0, s.itemCount + delta) } : s);
-  });
-}
 
 export function useCreateStore() {
   const queryClient = useQueryClient();
@@ -110,7 +100,6 @@ export function useAddToStoreList(storeId: number | null) {
           return [...old, newItem];
         }
       );
-      adjustStoreCount(queryClient, storeId!, +1);
     },
     onError: (error) => {
       toast({ title: "Error", description: error.message, variant: "destructive" });
@@ -161,7 +150,6 @@ export function useRemoveFromStoreList(storeId: number | null) {
         [api.stores.getList.path, storeId],
         (old) => old ? old.filter(i => i.id !== listItemId) : old
       );
-      adjustStoreCount(queryClient, storeId!, -1);
     },
     onError: (error) => {
       toast({ title: "Error", description: error.message, variant: "destructive" });
