@@ -64,8 +64,8 @@ export default function Database() {
 
       <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6">
         <div>
-          <h1 className="text-3xl sm:text-4xl font-bold font-display text-foreground flex items-center gap-3">
-            <DbIcon className="w-8 h-8 text-primary/80" />
+          <h1 className="text-3xl sm:text-4xl font-bold font-display text-foreground flex items-center gap-2">
+            <DbIcon className="w-4 h-4 text-primary/80" />
             Item Database
           </h1>
           <p className="text-muted-foreground mt-2 text-lg">
@@ -129,8 +129,8 @@ export default function Database() {
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center text-center p-12 bg-card border border-border/50 border-dashed rounded-3xl min-h-[300px]">
-          <div className="w-16 h-16 bg-secondary rounded-2xl flex items-center justify-center mb-4">
-            <Library className="w-8 h-8 text-muted-foreground" />
+          <div className="w-8 h-8 bg-secondary rounded-xl flex items-center justify-center mb-4">
+            <Library className="w-4 h-4 text-muted-foreground" />
           </div>
           <h3 className="text-xl font-bold font-display text-foreground mb-2">No items found</h3>
           <p className="text-muted-foreground max-w-sm mb-6">

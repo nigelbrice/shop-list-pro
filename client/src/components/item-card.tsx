@@ -100,7 +100,7 @@ export function ItemCard({ item }: ItemCardProps) {
               className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
             />
           ) : (
-            <Package className="w-8 h-8 text-muted-foreground/50" />
+            <Package className="w-4 h-4 text-muted-foreground/50" />
           )}
         </div>
 
