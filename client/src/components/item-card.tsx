@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Package, MoreVertical, Pencil, Trash2, Loader2, Check } from "lucide-react";
+import { Package, MoreVertical, Pencil, Trash2, Loader2, Check, Plus } from "lucide-react";
 import type { Item } from "@shared/schema";
 import { useUpdateItem, useDeleteItem } from "@/hooks/use-items";
 import { cn } from "@/lib/utils";
