@@ -11,7 +11,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { ItemDialog } from "./item-dialog";
 
 interface ItemCardProps {
@@ -36,7 +35,7 @@ export function ItemCard({ item, viewMode = "grid" }: ItemCardProps) {
     if (newQuantity < 1) return;
     updateMutation.mutate({
       id: item.id,
-      quantity: String(newQuantity),
+      quantity: newQuantity,
     });
   };
 
@@ -82,14 +81,9 @@ export function ItemCard({ item, viewMode = "grid" }: ItemCardProps) {
         </div>
 
         <div className="flex flex-col flex-1 justify-center min-w-0">
-          <div className="flex items-center gap-2">
-            <h3 className="font-bold text-foreground text-base truncate">
-              {item.name}
-            </h3>
-            <Badge variant="outline" className="text-[10px] h-4 px-1.5 py-0 bg-primary/5 text-primary border-primary/20">
-              {item.category}
-            </Badge>
-          </div>
+          <h3 className="font-bold text-foreground text-base truncate">
+            {item.name}
+          </h3>
           {item.notes && (
             <p className="text-xs text-muted-foreground truncate">
               {item.notes}
@@ -183,14 +177,12 @@ export function ItemCard({ item, viewMode = "grid" }: ItemCardProps) {
           "flex flex-col flex-1",
           isList ? "justify-center mr-10" : "p-5"
         )}>
-          <div className="flex items-center gap-2">
-            <h3 className="font-bold text-foreground text-base truncate">
-              {item.name}
-            </h3>
-            <Badge variant="outline" className="text-[10px] h-4 px-1.5 py-0 bg-primary/5 text-primary border-primary/20">
-              {item.category}
-            </Badge>
-          </div>
+          <h3 className={cn(
+            "font-bold text-foreground transition-colors",
+            isList ? "text-base" : "text-lg mb-1"
+          )}>
+            {item.name}
+          </h3>
           
           {!isList && item.notes && (
             <p className="text-sm text-muted-foreground line-clamp-2 mt-1 mb-4 flex-1">

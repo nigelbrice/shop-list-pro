@@ -10,22 +10,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Search, Loader2, Database as DbIcon, Library, Filter } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
+import { Search, Loader2, Database as DbIcon, Library } from "lucide-react";
 
-type SortOption = "name_asc" | "name_desc" | "newest" | "oldest" | "category";
+type SortOption = "name_asc" | "name_desc" | "newest" | "oldest";
 
 export default function Database() {
   const { data: items, isLoading } = useItems();
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState<SortOption>("newest");
-  const [filterCategory, setFilterCategory] = useState<string>("all");
-
-  const categories = useMemo(() => {
-    if (!items) return [];
-    const unique = new Set(items.map(i => i.category));
-    return Array.from(unique).sort();
-  }, [items]);
 
   const filteredAndSortedItems = useMemo(() => {
     if (!items) return [];
@@ -34,10 +26,6 @@ export default function Database() {
       item.name.toLowerCase().includes(search.toLowerCase()) || 
       (item.notes && item.notes.toLowerCase().includes(search.toLowerCase()))
     );
-
-    if (filterCategory !== "all") {
-      result = result.filter(item => item.category === filterCategory);
-    }
 
     result.sort((a, b) => {
       switch (sortBy) {
@@ -49,15 +37,13 @@ export default function Database() {
           return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
         case "oldest":
           return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-        case "category":
-          return a.category.localeCompare(b.category) || a.name.localeCompare(b.name);
         default:
           return 0;
       }
     });
 
     return result;
-  }, [items, search, sortBy, filterCategory]);
+  }, [items, search, sortBy]);
 
   if (isLoading) {
     return (
@@ -96,37 +82,18 @@ export default function Database() {
             className="pl-10 h-12 bg-secondary/30 border-transparent focus-visible:bg-background text-base rounded-xl"
           />
         </div>
-        <div className="flex flex-row gap-2">
-          <div className="w-full sm:w-[160px]">
-            <Select value={filterCategory} onValueChange={setFilterCategory}>
-              <SelectTrigger className="h-12 bg-secondary/30 border-transparent rounded-xl text-base">
-                <div className="flex items-center gap-2">
-                  <Filter className="w-4 h-4 text-muted-foreground" />
-                  <SelectValue placeholder="Category" />
-                </div>
-              </SelectTrigger>
-              <SelectContent className="rounded-xl border-border/50 shadow-xl">
-                <SelectItem value="all">All Categories</SelectItem>
-                {categories.map(cat => (
-                  <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="w-full sm:w-[160px]">
-            <Select value={sortBy} onValueChange={(val: SortOption) => setSortBy(val)}>
-              <SelectTrigger className="h-12 bg-secondary/30 border-transparent rounded-xl text-base">
-                <SelectValue placeholder="Sort by" />
-              </SelectTrigger>
-              <SelectContent className="rounded-xl border-border/50 shadow-xl">
-                <SelectItem value="newest">Newest Added</SelectItem>
-                <SelectItem value="oldest">Oldest Added</SelectItem>
-                <SelectItem value="name_asc">Alphabetical (A-Z)</SelectItem>
-                <SelectItem value="name_desc">Alphabetical (Z-A)</SelectItem>
-                <SelectItem value="category">By Category</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+        <div className="w-full sm:w-[200px]">
+          <Select value={sortBy} onValueChange={(val: SortOption) => setSortBy(val)}>
+            <SelectTrigger className="h-12 bg-secondary/30 border-transparent rounded-xl text-base">
+              <SelectValue placeholder="Sort by" />
+            </SelectTrigger>
+            <SelectContent className="rounded-xl border-border/50 shadow-xl">
+              <SelectItem value="newest">Newest Added</SelectItem>
+              <SelectItem value="oldest">Oldest Added</SelectItem>
+              <SelectItem value="name_asc">Alphabetical (A-Z)</SelectItem>
+              <SelectItem value="name_desc">Alphabetical (Z-A)</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
