@@ -1,16 +1,27 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, buildUrl } from "@shared/routes";
-import type { Store, StoreListItemWithItem } from "@shared/schema";
+import type { StoreWithCount, StoreListItemWithItem } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 
 export function useStores() {
-  return useQuery<Store[]>({
+  return useQuery<StoreWithCount[]>({
     queryKey: [api.stores.list.path],
     queryFn: async () => {
       const res = await fetch(api.stores.list.path, { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch stores");
       return res.json();
     },
+  });
+}
+
+function adjustStoreCount(
+  queryClient: ReturnType<typeof useQueryClient>,
+  storeId: number,
+  delta: number
+) {
+  queryClient.setQueryData<StoreWithCount[]>([api.stores.list.path], (old) => {
+    if (!old) return old;
+    return old.map(s => s.id === storeId ? { ...s, itemCount: Math.max(0, s.itemCount + delta) } : s);
   });
 }
 
@@ -26,13 +37,14 @@ export function useCreateStore() {
         credentials: "include",
       });
       if (!res.ok) throw new Error("Failed to create store");
-      return res.json() as Promise<Store>;
+      return res.json() as Promise<StoreWithCount>;
     },
     onSuccess: (newStore) => {
-      queryClient.setQueryData<Store[]>([api.stores.list.path], (old) => {
-        if (!old) return [newStore];
-        if (old.some(s => s.id === newStore.id)) return old;
-        return [...old, newStore];
+      queryClient.setQueryData<StoreWithCount[]>([api.stores.list.path], (old) => {
+        const withCount: StoreWithCount = { ...newStore, itemCount: newStore.itemCount ?? 0 };
+        if (!old) return [withCount];
+        if (old.some(s => s.id === withCount.id)) return old;
+        return [...old, withCount];
       });
     },
     onError: (error) => {
@@ -89,8 +101,16 @@ export function useAddToStoreList(storeId: number | null) {
       if (!res.ok) throw new Error("Failed to add to list");
       return res.json() as Promise<StoreListItemWithItem>;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [api.stores.getList.path, storeId] });
+    onSuccess: (newItem) => {
+      queryClient.setQueryData<StoreListItemWithItem[]>(
+        [api.stores.getList.path, storeId],
+        (old) => {
+          if (!old) return [newItem];
+          if (old.some(i => i.id === newItem.id)) return old;
+          return [...old, newItem];
+        }
+      );
+      adjustStoreCount(queryClient, storeId!, +1);
     },
     onError: (error) => {
       toast({ title: "Error", description: error.message, variant: "destructive" });
@@ -141,6 +161,7 @@ export function useRemoveFromStoreList(storeId: number | null) {
         [api.stores.getList.path, storeId],
         (old) => old ? old.filter(i => i.id !== listItemId) : old
       );
+      adjustStoreCount(queryClient, storeId!, -1);
     },
     onError: (error) => {
       toast({ title: "Error", description: error.message, variant: "destructive" });

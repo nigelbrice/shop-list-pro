@@ -37,6 +37,7 @@ export type UpdateItemRequest = Partial<InsertItem>;
 
 export type Store = typeof stores.$inferSelect;
 export type InsertStore = z.infer<typeof insertStoreSchema>;
+export type StoreWithCount = Store & { itemCount: number };
 
 export type StoreListItem = typeof storeListItems.$inferSelect;
 export type InsertStoreListItem = z.infer<typeof insertStoreListItemSchema>;

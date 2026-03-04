@@ -1,6 +1,6 @@
 import { db } from "./db";
-import { items, stores, storeListItems, type Item, type InsertItem, type UpdateItemRequest, type Store, type StoreListItem, type StoreListItemWithItem } from "@shared/schema";
-import { eq, asc } from "drizzle-orm";
+import { items, stores, storeListItems, type Item, type InsertItem, type UpdateItemRequest, type Store, type StoreWithCount, type StoreListItem, type StoreListItemWithItem } from "@shared/schema";
+import { eq, asc, sql } from "drizzle-orm";
 
 export interface IStorage {
   getItems(): Promise<Item[]>;
@@ -10,7 +10,7 @@ export interface IStorage {
   deleteItem(id: number): Promise<void>;
   reorderListItems(orderedIds: number[]): Promise<void>;
 
-  getStores(): Promise<Store[]>;
+  getStores(): Promise<StoreWithCount[]>;
   createStore(name: string): Promise<Store>;
   deleteStore(id: number): Promise<void>;
 
@@ -54,8 +54,18 @@ export class DatabaseStorage implements IStorage {
     );
   }
 
-  async getStores(): Promise<Store[]> {
-    return await db.select().from(stores).orderBy(asc(stores.id));
+  async getStores(): Promise<StoreWithCount[]> {
+    const rows = await db
+      .select({
+        id: stores.id,
+        name: stores.name,
+        itemCount: sql<number>`cast(count(${storeListItems.id}) as int)`,
+      })
+      .from(stores)
+      .leftJoin(storeListItems, eq(storeListItems.storeId, stores.id))
+      .groupBy(stores.id, stores.name)
+      .orderBy(asc(stores.id));
+    return rows;
   }
 
   async createStore(name: string): Promise<Store> {
