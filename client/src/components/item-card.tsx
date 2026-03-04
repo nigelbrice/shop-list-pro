@@ -51,7 +51,7 @@ export function ItemCard({ item }: ItemCardProps) {
 
   const buttonLabel = () => {
     if (isListPending) return null;
-    if (isOnList) return effectiveStore ? `In ${effectiveStore.name} list` : "On List";
+    if (isOnList) return "Added";
     return "Add";
   };
 
