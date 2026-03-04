@@ -46,7 +46,7 @@ export default function Login({ onSuccess }: { onSuccess: () => void }) {
             <ListChecks className="w-9 h-9" />
           </div>
           <h1 className="text-4xl font-bold font-display text-foreground">
-            Shope<span className="text-muted-foreground font-normal">eze</span>
+            <span className="text-primary">Shop</span><span className="text-muted-foreground font-normal">eeze</span>
           </h1>
           <p className="text-muted-foreground text-base">
             {tab === "login" ? "Sign in to your account" : "Create a new account"}
