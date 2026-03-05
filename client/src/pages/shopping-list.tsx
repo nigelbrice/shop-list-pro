@@ -80,14 +80,14 @@ function StoreListRow({ listItem, storeId }: { listItem: StoreListItemWithItem; 
       </Dialog>
 
       <div
-        className="group relative bg-card rounded-2xl border border-border/40 overflow-hidden flex flex-row items-center p-3 sm:p-4 gap-3 shadow-sm"
+        className="group relative bg-card rounded-2xl border border-border/40 overflow-hidden flex flex-row items-stretch p-3 sm:p-4 gap-3 shadow-sm"
         data-testid={`list-item-${listItem.id}`}
       >
         <Button
           variant="ghost"
           size="icon"
           onClick={() => removeMutation.mutate(listItem.id)}
-          className="w-10 h-10 rounded-full border-2 border-primary/20 hover:bg-primary/10 hover:border-primary transition-all duration-200 shrink-0"
+          className="w-10 h-10 rounded-full border-2 border-primary/20 hover:bg-primary/10 hover:border-primary transition-all duration-200 shrink-0 self-center"
           disabled={removeMutation.isPending}
           data-testid={`button-remove-${listItem.id}`}
         >
@@ -99,7 +99,7 @@ function StoreListRow({ listItem, storeId }: { listItem: StoreListItemWithItem; 
         <button
           onClick={() => hasImage && setShowPhoto(true)}
           className={cn(
-            "bg-secondary/30 flex items-center justify-center overflow-hidden shrink-0 w-12 h-12 rounded-xl relative group/thumb",
+            "bg-secondary/30 flex items-center justify-center overflow-hidden shrink-0 w-12 h-12 rounded-xl relative group/thumb self-center",
             hasImage ? "cursor-pointer" : "cursor-default"
           )}
           disabled={!hasImage}
@@ -119,37 +119,39 @@ function StoreListRow({ listItem, storeId }: { listItem: StoreListItemWithItem; 
           )}
         </button>
 
-      <div className="flex flex-col flex-1 justify-center min-w-0">
-        <h3 className="font-bold text-foreground text-base truncate" data-testid={`text-name-${listItem.id}`}>
-          {listItem.item.name}
-        </h3>
-        {listItem.item.category && (
-          <span className="text-xs text-primary/70 font-medium truncate">{listItem.item.category}</span>
-        )}
-        {listItem.item.notes && (
-          <p className="text-xs text-muted-foreground truncate">{listItem.item.notes}</p>
-        )}
-      </div>
+        <div className="flex flex-col flex-1 justify-between min-w-0 py-0.5">
+          <div className="min-w-0">
+            <h3 className="font-bold text-foreground text-base leading-snug" data-testid={`text-name-${listItem.id}`}>
+              {listItem.item.name}
+            </h3>
+            {listItem.item.category && (
+              <span className="text-xs text-primary/70 font-medium">{listItem.item.category}</span>
+            )}
+            {listItem.item.notes && (
+              <p className="text-xs text-muted-foreground">{listItem.item.notes}</p>
+            )}
+          </div>
 
-      <div className="flex items-center gap-1 sm:gap-2 bg-secondary/30 rounded-full px-1 py-1 shrink-0">
-        <Button variant="ghost" size="icon"
-          className="w-7 h-7 sm:w-8 sm:h-8 rounded-full hover:bg-background shadow-sm"
-          onClick={() => updateMutation.mutate({ listItemId: listItem.id, quantity: listItem.quantity - 1 })}
-          disabled={listItem.quantity <= 1 || updateMutation.isPending}
-          data-testid={`button-decrease-${listItem.id}`}>
-          <Minus className="w-3 h-3 sm:w-4 sm:h-4" />
-        </Button>
-        <span className="w-6 sm:w-8 text-center font-bold text-sm sm:text-base tabular-nums"
-          data-testid={`text-quantity-${listItem.id}`}>{listItem.quantity}</span>
-        <Button variant="ghost" size="icon"
-          className="w-7 h-7 sm:w-8 sm:h-8 rounded-full hover:bg-background shadow-sm"
-          onClick={() => updateMutation.mutate({ listItemId: listItem.id, quantity: listItem.quantity + 1 })}
-          disabled={updateMutation.isPending}
-          data-testid={`button-increase-${listItem.id}`}>
-          <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
-        </Button>
+          <div className="flex items-center gap-1 bg-secondary/30 rounded-full px-1 py-0.5 self-start mt-2">
+            <Button variant="ghost" size="icon"
+              className="w-6 h-6 rounded-full hover:bg-background shadow-sm"
+              onClick={() => updateMutation.mutate({ listItemId: listItem.id, quantity: listItem.quantity - 1 })}
+              disabled={listItem.quantity <= 1 || updateMutation.isPending}
+              data-testid={`button-decrease-${listItem.id}`}>
+              <Minus className="w-3 h-3" />
+            </Button>
+            <span className="w-5 text-center font-bold text-sm tabular-nums"
+              data-testid={`text-quantity-${listItem.id}`}>{listItem.quantity}</span>
+            <Button variant="ghost" size="icon"
+              className="w-6 h-6 rounded-full hover:bg-background shadow-sm"
+              onClick={() => updateMutation.mutate({ listItemId: listItem.id, quantity: listItem.quantity + 1 })}
+              disabled={updateMutation.isPending}
+              data-testid={`button-increase-${listItem.id}`}>
+              <Plus className="w-3 h-3" />
+            </Button>
+          </div>
+        </div>
       </div>
-    </div>
     </>
   );
 }
