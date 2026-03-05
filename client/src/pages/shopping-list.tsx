@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useStoreContext } from "@/context/store-context";
 import { useStores, useCreateStore, useDeleteStore, useStoreList, useUpdateStoreListItem, useRemoveFromStoreList, useReorderStoreList } from "@/hooks/use-stores";
-import { ShoppingBag, Loader2, CheckCircle2, GripVertical, Plus, Minus, Check, Package, Store, Trash2, X, Expand } from "lucide-react";
+import { ShoppingBag, Loader2, CheckCircle2, GripVertical, Plus, Minus, Check, Package, Store, Trash2, X, Expand, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -189,14 +189,48 @@ function StoreTabs({
   onNewStore: () => void;
 }) {
   const tabsRef = useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  const updateScroll = useCallback(() => {
+    const el = tabsRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 2);
+    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 2);
+  }, []);
+
+  useEffect(() => {
+    const el = tabsRef.current;
+    if (!el) return;
+    updateScroll();
+    el.addEventListener("scroll", updateScroll, { passive: true });
+    window.addEventListener("resize", updateScroll);
+    return () => {
+      el.removeEventListener("scroll", updateScroll);
+      window.removeEventListener("resize", updateScroll);
+    };
+  }, [updateScroll, stores]);
+
+  const scrollBy = (dir: "left" | "right") => {
+    tabsRef.current?.scrollBy({ left: dir === "right" ? 160 : -160, behavior: "smooth" });
+  };
 
   return (
-    <div
-      ref={tabsRef}
-      className="flex gap-2 overflow-x-auto pb-1 scrollbar-none"
-      style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-      data-testid="store-tabs"
-    >
+    <div className="relative" data-testid="store-tabs">
+      {canScrollLeft && (
+        <button
+          onClick={() => scrollBy("left")}
+          className="absolute left-0 top-0 bottom-0 z-10 flex items-center pl-0.5 pr-3 bg-gradient-to-r from-background via-background/90 to-transparent"
+          aria-label="Scroll left"
+        >
+          <ChevronLeft className="w-4 h-4 text-muted-foreground" />
+        </button>
+      )}
+      <div
+        ref={tabsRef}
+        className="flex gap-2 overflow-x-auto pb-1 scrollbar-none"
+        style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+      >
       {stores.map(store => {
         const isActive = selectedStoreId === store.id;
         return (
@@ -234,6 +268,16 @@ function StoreTabs({
         <Plus className="w-4 h-4" />
         New list
       </button>
+      </div>
+      {canScrollRight && (
+        <button
+          onClick={() => scrollBy("right")}
+          className="absolute right-0 top-0 bottom-0 z-10 flex items-center pr-0.5 pl-3 bg-gradient-to-l from-background via-background/90 to-transparent"
+          aria-label="Scroll right"
+        >
+          <ChevronRight className="w-4 h-4 text-muted-foreground" />
+        </button>
+      )}
     </div>
   );
 }
