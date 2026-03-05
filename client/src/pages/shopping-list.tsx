@@ -80,26 +80,26 @@ function StoreListRow({ listItem, storeId }: { listItem: StoreListItemWithItem; 
       </Dialog>
 
       <div
-        className="group relative bg-card rounded-2xl border border-border/40 overflow-hidden flex flex-row items-stretch p-3 sm:p-4 gap-3 shadow-sm"
+        className="group relative bg-card rounded-2xl border border-border/40 overflow-hidden flex flex-row items-stretch p-2 sm:p-3 gap-2 shadow-sm"
         data-testid={`list-item-${listItem.id}`}
       >
         <Button
           variant="ghost"
           size="icon"
           onClick={() => removeMutation.mutate(listItem.id)}
-          className="w-10 h-10 rounded-full border-2 border-primary/20 hover:bg-primary/10 hover:border-primary transition-all duration-200 shrink-0 self-center"
+          className="w-8 h-8 rounded-full border-2 border-primary/20 hover:bg-primary/10 hover:border-primary transition-all duration-200 shrink-0 self-center"
           disabled={removeMutation.isPending}
           data-testid={`button-remove-${listItem.id}`}
         >
           {removeMutation.isPending
-            ? <Loader2 className="w-5 h-5 animate-spin text-primary" />
-            : <Check className="w-5 h-5 text-primary" />}
+            ? <Loader2 className="w-4 h-4 animate-spin text-primary" />
+            : <Check className="w-4 h-4 text-primary" />}
         </Button>
 
         <button
           onClick={() => hasImage && setShowPhoto(true)}
           className={cn(
-            "bg-secondary/30 flex items-center justify-center overflow-hidden shrink-0 w-12 h-12 rounded-xl relative group/thumb self-center",
+            "bg-secondary/30 flex items-center justify-center overflow-hidden shrink-0 w-10 h-10 rounded-xl relative group/thumb self-center",
             hasImage ? "cursor-pointer" : "cursor-default"
           )}
           disabled={!hasImage}
@@ -115,13 +115,13 @@ function StoreListRow({ listItem, storeId }: { listItem: StoreListItemWithItem; 
               </div>
             </>
           ) : (
-            <Package className="w-6 h-6 text-muted-foreground/50" />
+            <Package className="w-5 h-5 text-muted-foreground/50" />
           )}
         </button>
 
-        <div className="flex flex-col flex-1 justify-between min-w-0 py-0.5">
+        <div className="flex flex-col flex-1 justify-between min-w-0">
           <div className="min-w-0">
-            <h3 className="font-bold text-foreground text-base leading-snug" data-testid={`text-name-${listItem.id}`}>
+            <h3 className="font-bold text-foreground text-sm leading-snug" data-testid={`text-name-${listItem.id}`}>
               {listItem.item.name}
             </h3>
             {listItem.item.category && (
@@ -132,7 +132,7 @@ function StoreListRow({ listItem, storeId }: { listItem: StoreListItemWithItem; 
             )}
           </div>
 
-          <div className="flex items-center gap-1 bg-secondary/30 rounded-full px-1 py-0.5 self-start mt-2">
+          <div className="flex items-center gap-1 bg-secondary/30 rounded-full px-1 py-0.5 self-start mt-1">
             <Button variant="ghost" size="icon"
               className="w-6 h-6 rounded-full hover:bg-background shadow-sm"
               onClick={() => updateMutation.mutate({ listItemId: listItem.id, quantity: listItem.quantity - 1 })}
