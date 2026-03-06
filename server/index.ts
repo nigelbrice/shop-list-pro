@@ -1,3 +1,4 @@
+import "dotenv/config";
 import express, { type Request, Response, NextFunction } from "express";
 import session from "express-session";
 import pgSession from "connect-pg-simple";
@@ -103,15 +104,9 @@ app.use((req, res, next) => {
     await setupVite(httpServer, app);
   }
 
-  const port = parseInt(process.env.PORT || "5000", 10);
-  httpServer.listen(
-    {
-      port,
-      host: "0.0.0.0",
-      reusePort: true,
-    },
-    () => {
-      log(`serving on port ${port}`);
-    },
-  );
+const port = parseInt(process.env.PORT || "5000", 10);
+
+httpServer.listen(port, "0.0.0.0", () => {
+  console.log(`Server running on port ${port}`);
+});
 })();
