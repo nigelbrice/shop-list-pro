@@ -177,7 +177,7 @@ export function Layout({ children, auth }: { children: React.ReactNode; auth: Au
     <div className="min-h-screen flex flex-col bg-background">
       <header className="sticky top-0 z-40 w-full backdrop-blur-xl bg-background/80 border-b border-border">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 h-12 sm:h-16 flex items-center justify-between">
-         <div className="flex items-center justify-center w-full relative">
+         <div className="flex items-center justify-center flex-1 relative">
 
   {/* Hamburger menu */}
   <button
@@ -193,15 +193,11 @@ export function Layout({ children, auth }: { children: React.ReactNode; auth: Au
     <span className="text-muted-foreground font-normal">eeze</span>
   </h1>
 
-</div> 
+   </div> 
 
-          
+     <MemberMenu auth={auth} />
 
-           
-            
-            <MemberMenu auth={auth} />
-          </div>
-      
+        </div>
       </header>
 
 {drawerOpen && (
