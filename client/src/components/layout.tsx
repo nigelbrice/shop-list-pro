@@ -265,7 +265,10 @@ export function Layout({ children, auth }: { children: React.ReactNode; auth: Au
 
         <button className="flex items-center gap-3 w-full text-left">
           👤 Profile
-        <button
+        </button>
+
+
+        <button  
           onClick={() => {
           toggleTheme();
           setDrawerOpen(false);
