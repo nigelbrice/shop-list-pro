@@ -155,11 +155,12 @@ function MemberMenu({ auth }: { auth: AuthState }) {
 }
 
 export function Layout({ children, auth }: { children: React.ReactNode; auth: AuthState }) {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const [onlineCount, setOnlineCount] = useState(1);
   const { theme, toggleTheme } = useTheme();
 
   const [drawerOpen, setDrawerOpen] = useState(false)
+ 
 
   const handlePresenceChange = useCallback((count: number) => {
     setOnlineCount(count);
@@ -181,7 +182,7 @@ export function Layout({ children, auth }: { children: React.ReactNode; auth: Au
   {/* Hamburger menu */}
   <button
     onClick={() => setDrawerOpen(!drawerOpen)}
-    className="absolute left-0 text-xl px-2"
+    className="absolute left-3 text-xl p-2"
   >
     ☰
   </button>
@@ -244,6 +245,68 @@ export function Layout({ children, auth }: { children: React.ReactNode; auth: Au
         </div>
       </header>
 
+{drawerOpen && (
+  <div className="fixed inset-0 z-50">
+
+    {/* Background overlay */}
+    <div
+      className="absolute inset-0 bg-black/50"
+      onClick={() => setDrawerOpen(false)}
+    />
+
+    {/* Drawer panel */}
+    <div className="absolute left-0 top-0 h-full w-72 bg-background border-r border-border p-6">
+
+      <h2 className="text-lg font-semibold mb-6">
+        Shopeeze Menu
+      </h2>
+
+      <div className="space-y-4">
+
+        <button className="flex items-center gap-3 w-full text-left">
+          👤 Profile
+        <button
+          onClick={() => {
+          toggleTheme();
+          setDrawerOpen(false);
+  }}
+       className="flex items-center gap-3 w-full text-left"
+>   
+       🌙 Toggle Theme
+     </button>
+
+        <div className="flex items-center gap-3 text-sm text-muted-foreground">
+          🟢 {onlineCount} users online
+        </div>
+
+        <hr className="border-border my-2" />
+
+        <button
+          onClick={() => {
+            setLocation("/");
+            setDrawerOpen(false);
+          }}
+          className="flex items-center gap-3 w-full text-left"
+        >
+          📋 Lists
+        </button>
+
+        <button
+          onClick={() => {
+            setLocation("/database");
+            setDrawerOpen(false);
+          }}
+          className="flex items-center gap-3 w-full text-left"
+        >
+          🗄 Database
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+)}
       <main className="flex-1 max-w-5xl w-full mx-auto p-3 sm:p-6 lg:p-8">
         {children}
       </main>
