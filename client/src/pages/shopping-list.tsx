@@ -40,7 +40,7 @@ import { cn } from "@/lib/utils";
 
 const PRESET_STORES = [
   "Tesco", "Asda", "Sainsbury's", "Morrisons", "Aldi", "Lidl",
-  "Waitrose", "M&S Food", "Co-op", "Iceland", "Costco", "Amazon Fresh",
+  "Waitrose", "M&S Food", "Co-op", "Iceland",
 ];
 
 // ── Store List Row ─────────────────────────────────────────────────────────────

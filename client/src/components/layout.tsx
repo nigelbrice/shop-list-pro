@@ -21,6 +21,7 @@ import { useToast } from "@/hooks/use-toast";
 function MemberMenu({ auth }: { auth: AuthState }) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [newName, setNewName] = useState("");
+  const [drawerOpen, setDrawerOpen] = useState(false)
   const switchMutation = useSwitchUser();
   const addMutation = useAddMember();
   const deleteMutation = useDeleteMember();
@@ -158,6 +159,8 @@ export function Layout({ children, auth }: { children: React.ReactNode; auth: Au
   const [onlineCount, setOnlineCount] = useState(1);
   const { theme, toggleTheme } = useTheme();
 
+  const [drawerOpen, setDrawerOpen] = useState(false)
+
   const handlePresenceChange = useCallback((count: number) => {
     setOnlineCount(count);
   }, []);
@@ -173,14 +176,23 @@ export function Layout({ children, auth }: { children: React.ReactNode; auth: Au
     <div className="min-h-screen flex flex-col bg-background">
       <header className="sticky top-0 z-40 w-full backdrop-blur-xl bg-background/80 border-b border-border">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 h-12 sm:h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground">
-              <ListChecks className="w-5 h-5" />
-            </div>
-            <h1 className="text-xl font-bold tracking-tight text-foreground font-display">
-              <span className="text-primary">Shop</span><span className="text-muted-foreground font-normal">eeze</span>
-            </h1>
-          </div>
+         <div className="flex items-center justify-center w-full relative">
+
+  {/* Hamburger menu */}
+  <button
+    onClick={() => setDrawerOpen(!drawerOpen)}
+    className="absolute left-0 text-xl px-2"
+  >
+    ☰
+  </button>
+
+  {/* Logo */}
+  <h1 className="text-xl font-bold tracking-tight text-foreground font-display">
+    <span className="text-primary">Shop</span>
+    <span className="text-muted-foreground font-normal">eeze</span>
+  </h1>
+
+</div> 
 
           <div className="flex items-center gap-2 sm:gap-3">
             <div
