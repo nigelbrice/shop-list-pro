@@ -260,7 +260,7 @@ export function Layout({ children, auth }: { children: React.ReactNode; auth: Au
           }}
           className="flex items-center gap-3 w-full text-left"
         >
-          🗄 Grocery Index
+          🗄 Database
         </button>
 
       </div>
