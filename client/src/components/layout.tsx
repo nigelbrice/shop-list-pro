@@ -201,7 +201,7 @@ export function Layout({ children, auth }: { children: React.ReactNode; auth: Au
             
             <MemberMenu auth={auth} />
           </div>
-        </div>
+      
       </header>
 
 {drawerOpen && (
