@@ -213,7 +213,7 @@ export function Layout({ children, auth }: { children: React.ReactNode; auth: Au
     />
 
     {/* Drawer panel */}
-    <div className="div className="absolute left-0 top-0 h-full w-72 bg-background border-r border-border p-6 animate-in slide-in-from-left">
+    <div className="absolute left-0 top-0 h-full w-72 bg-background border-r border-border p-6 animate-in slide-in-from-left">
 
       <h2 className="text-lg font-semibold mb-6">
         Shopeeze Menu
@@ -225,7 +225,6 @@ export function Layout({ children, auth }: { children: React.ReactNode; auth: Au
           👤 Profile
         </button>
 
-// redeploy
 
         <button  
           onClick={() => {
