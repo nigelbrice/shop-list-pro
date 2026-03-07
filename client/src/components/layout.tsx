@@ -195,51 +195,10 @@ export function Layout({ children, auth }: { children: React.ReactNode; auth: Au
 
 </div> 
 
-          <div className="flex items-center gap-2 sm:gap-3">
-            <div
-              className="flex items-center gap-1.5 text-sm text-muted-foreground"
-              data-testid="online-indicator"
-              title={`${onlineCount} ${onlineCount === 1 ? "person" : "people"} online`}
-            >
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
-              </span>
-              <Users className="w-4 h-4" />
-              <span className="tabular-nums font-medium text-foreground">{onlineCount}</span>
-            </div>
+          
 
-            <button
-              onClick={toggleTheme}
-              data-testid="button-theme-toggle"
-              title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-              className="w-8 h-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary/80 transition-colors"
-            >
-              {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-            </button>
-
-            <nav className="flex items-center gap-1 sm:gap-2 bg-secondary/50 p-1 rounded-xl">
-              {navItems.map((item) => {
-                const isActive = location === item.href;
-                const Icon = item.icon;
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={cn(
-                      "flex items-center gap-2 px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-sm font-medium transition-all duration-200 focus-ring",
-                      isActive
-                        ? "bg-background text-foreground shadow-sm shadow-black/5"
-                        : "text-muted-foreground hover:text-foreground hover:bg-background/50"
-                    )}
-                  >
-                    <Icon className="w-4 h-4" />
-                    <span className="hidden sm:inline">{item.label}</span>
-                  </Link>
-                );
-              })}
-            </nav>
-
+           
+            
             <MemberMenu auth={auth} />
           </div>
         </div>
@@ -255,7 +214,7 @@ export function Layout({ children, auth }: { children: React.ReactNode; auth: Au
     />
 
     {/* Drawer panel */}
-    <div className="absolute left-0 top-0 h-full w-72 bg-background border-r border-border p-6">
+    <div className="div className="absolute left-0 top-0 h-full w-72 bg-background border-r border-border p-6 animate-in slide-in-from-left">
 
       <h2 className="text-lg font-semibold mb-6">
         Shopeeze Menu
@@ -301,7 +260,7 @@ export function Layout({ children, auth }: { children: React.ReactNode; auth: Au
           }}
           className="flex items-center gap-3 w-full text-left"
         >
-          🗄 Database
+          🗄 Grocery Index
         </button>
 
       </div>
