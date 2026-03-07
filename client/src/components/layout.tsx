@@ -176,29 +176,32 @@ export function Layout({ children, auth }: { children: React.ReactNode; auth: Au
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <header className="sticky top-0 z-40 w-full backdrop-blur-xl bg-background/80 border-b border-border">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-12 sm:h-16 flex items-center justify-between">
-         <div className="flex items-center justify-center flex-1 relative">
+  <div className="max-w-5xl mx-auto px-4 sm:px-6 h-12 sm:h-16 flex items-center justify-between">
 
-  {/* Hamburger menu */}
-  <button
-    onClick={() => setDrawerOpen(!drawerOpen)}
-    className="absolute left-3 text-xl p-2"
-  >
-    ☰
-  </button>
+    {/* Left side */}
+    <div className="flex items-center gap-3">
 
-  {/* Logo */}
-  <h1 className="text-xl font-bold tracking-tight text-foreground font-display">
-    <span className="text-primary">Shop</span>
-    <span className="text-muted-foreground font-normal">eeze</span>
-  </h1>
+      {/* Hamburger */}
+      <button
+        onClick={() => setDrawerOpen(!drawerOpen)}
+        className="text-xl p-2"
+      >
+        ☰
+      </button>
 
-   </div> 
+      {/* Logo */}
+      <h1 className="text-xl font-bold tracking-tight text-foreground font-display">
+        <span className="text-primary">Shop</span>
+        <span className="text-muted-foreground font-normal">eeze</span>
+      </h1>
 
-     <MemberMenu auth={auth} />
+    </div>
 
-        </div>
-      </header>
+    {/* Right side */}
+    <MemberMenu auth={auth} />
+
+  </div>
+</header>
 
 {drawerOpen && (
   <div className="fixed inset-0 z-50">
