@@ -357,6 +357,8 @@ export function ItemDialog({ item, trigger, open, onOpenChange }: ItemDialogProp
                 <input
                   id="item-photo-input"
                   type="file"
+                  accept="image/*"
+                  capture="environment"
                   ref={fileInputRef}
                   onChange={handleFileChange}
                   accept="image/*"

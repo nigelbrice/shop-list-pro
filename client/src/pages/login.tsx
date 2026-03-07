@@ -104,7 +104,7 @@ export default function Login({ onSuccess }: { onSuccess: () => void }) {
                   className="bg-secondary/50 border-transparent focus-visible:border-primary h-11"
                 />
                 <p className="text-xs text-muted-foreground">
-                  Up to 6 members can be added after creating your account.
+                  Up to 5 additional members can be added after creating your account.
                 </p>
               </div>
             )}
