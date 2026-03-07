@@ -7,3 +7,8 @@ registerSW({ immediate: true })
 
 createRoot(document.getElementById("root")!).render(<App />);
 
+import { processOfflineQueue } from "@/lib/offlineQueue";
+
+window.addEventListener("online", () => {
+  processOfflineQueue();
+});

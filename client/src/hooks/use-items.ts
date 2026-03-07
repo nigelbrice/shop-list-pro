@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api, buildUrl } from "@shared/routes";
 import type { Item, InsertItem, UpdateItemRequest } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
+import { safeFetch } from "@/lib/offlineQueue";
 
 export function useItems() {
   return useQuery({
@@ -20,28 +21,53 @@ export function useCreateItem() {
 
   return useMutation({
     mutationFn: async (data: InsertItem) => {
-      const res = await fetch(api.items.create.path, {
+      const res = await safeFetch(api.items.create.path, {
         method: api.items.create.method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
         credentials: "include",
       });
-      if (!res.ok) throw new Error("Failed to create item");
+
+      if (!res?.ok) return null;
+
       return api.items.create.responses[201].parse(await res.json()) as Item;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [api.items.list.path] });
-      toast({
-        title: "Item created",
-        description: "Your item has been added to the database.",
+
+    onMutate: async (newItem) => {
+      await queryClient.cancelQueries({ queryKey: [api.items.list.path] });
+
+      const previousItems = queryClient.getQueryData<Item[]>([
+        api.items.list.path,
+      ]);
+
+      const optimisticItem: Item = {
+        id: Date.now(),
+        name: newItem.name,
+        completed: false,
+        ...newItem,
+      } as Item;  
+
+      queryClient.setQueryData<Item[]>([api.items.list.path], (old) => {
+        return old ? [...old, optimisticItem] : [optimisticItem];
       });
+
+      return { previousItems };
     },
-    onError: (error) => {
+
+    onError: (error, _newItem, context) => {
+      if (context?.previousItems) {
+        queryClient.setQueryData([api.items.list.path], context.previousItems);
+      }
+
       toast({
         title: "Error",
         description: error.message,
         variant: "destructive",
       });
+    },
+
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: [api.items.list.path] });
     },
   });
 }
@@ -53,21 +79,26 @@ export function useUpdateItem() {
   return useMutation({
     mutationFn: async ({ id, ...updates }: { id: number } & UpdateItemRequest) => {
       const url = buildUrl(api.items.update.path, { id });
-      const res = await fetch(url, {
+      const res = await safeFetch(url, {
         method: api.items.update.method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updates),
         credentials: "include",
       });
-      if (!res.ok) throw new Error("Failed to update item");
+      if (!res?.ok) return;
       return api.items.update.responses[200].parse(await res.json()) as Item;
     },
     onSuccess: (updatedItem) => {
-      queryClient.setQueryData<Item[]>([api.items.list.path], (old) => {
-        if (!old) return old;
-        return old.map((item) => item.id === updatedItem.id ? updatedItem : item);
-      });
-    },
+  if (!updatedItem) return;
+
+  queryClient.setQueryData<Item[]>([api.items.list.path], (old) => {
+    if (!old) return old;
+    return old.map((item) =>
+      item.id === updatedItem.id ? updatedItem : item
+    );
+  });
+},
+
     onError: (error) => {
       toast({
         title: "Error",
@@ -85,11 +116,11 @@ export function useDeleteItem() {
   return useMutation({
     mutationFn: async (id: number) => {
       const url = buildUrl(api.items.delete.path, { id });
-      const res = await fetch(url, {
+      const res = await safeFetch(url, {
         method: api.items.delete.method,
         credentials: "include",
       });
-      if (!res.ok) throw new Error("Failed to delete item");
+      if (!res?.ok) return;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [api.items.list.path] });
@@ -114,13 +145,13 @@ export function useReorderItems() {
 
   return useMutation({
     mutationFn: async (orderedIds: number[]) => {
-      const res = await fetch(api.items.reorder.path, {
+      const res = await safeFetch(api.items.reorder.path, {
         method: api.items.reorder.method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ orderedIds }),
         credentials: "include",
       });
-      if (!res.ok) throw new Error("Failed to reorder items");
+      if (!res?.ok) return;
     },
     onError: (error) => {
       queryClient.invalidateQueries({ queryKey: [api.items.list.path] });
