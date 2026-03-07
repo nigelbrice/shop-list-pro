@@ -21,7 +21,6 @@ import { useToast } from "@/hooks/use-toast";
 function MemberMenu({ auth }: { auth: AuthState }) {
   const [showAddForm, setShowAddForm] = useState(false);
   const [newName, setNewName] = useState("");
-  const [drawerOpen, setDrawerOpen] = useState(false)
   const switchMutation = useSwitchUser();
   const addMutation = useAddMember();
   const deleteMutation = useDeleteMember();
@@ -157,10 +156,8 @@ function MemberMenu({ auth }: { auth: AuthState }) {
 export function Layout({ children, auth }: { children: React.ReactNode; auth: AuthState }) {
   const [location, setLocation] = useLocation();
   const [onlineCount, setOnlineCount] = useState(1);
-  const { theme, toggleTheme } = useTheme();
-
-  const [drawerOpen, setDrawerOpen] = useState(false)
- 
+  const { toggleTheme } = useTheme();
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   const handlePresenceChange = useCallback((count: number) => {
     setOnlineCount(count);
@@ -169,108 +166,134 @@ export function Layout({ children, auth }: { children: React.ReactNode; auth: Au
   useRealtime(handlePresenceChange);
 
   const navItems = [
-    { href: "/", label: "Shopping List", icon: ListChecks },
-    { href: "/database", label: "Grocery Index", icon: Database },
+    { href: "/", label: "Lists", icon: "📋" },
+    { href: "/database", label: "Database", icon: "🗄" },
   ];
+
+  const navigate = (path: string) => {
+    setLocation(path);
+    setDrawerOpen(false);
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
+
+      {/* Header */}
       <header className="sticky top-0 z-40 w-full backdrop-blur-xl bg-background/80 border-b border-border">
-  <div className="max-w-5xl mx-auto px-4 sm:px-6 h-12 sm:h-16 flex items-center justify-between">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-12 sm:h-16 flex items-center justify-between">
 
-    {/* Left side */}
-    <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3">
 
-      {/* Hamburger */}
-      <button
-        onClick={() => setDrawerOpen(!drawerOpen)}
-        className="text-xl p-2"
-      >
-        ☰
-      </button>
+            <button
+              onClick={() => setDrawerOpen(!drawerOpen)}
+              className="text-xl p-2"
+            >
+              ☰
+            </button>
 
-      {/* Logo */}
-      <h1 className="text-xl font-bold tracking-tight text-foreground font-display">
-        <span className="text-primary">Shop</span>
-        <span className="text-muted-foreground font-normal">eeze</span>
-      </h1>
+            <h1 className="text-xl font-bold tracking-tight font-display">
+              <span className="text-primary">Shop</span>
+              <span className="text-muted-foreground font-normal">eeze</span>
+            </h1>
 
-    </div>
+          </div>
 
-    {/* Right side */}
-    <MemberMenu auth={auth} />
+          <MemberMenu auth={auth} />
 
-  </div>
-</header>
+        </div>
+      </header>
 
+     {/* Drawer */}
 {drawerOpen && (
   <div className="fixed inset-0 z-50">
 
-    {/* Background overlay */}
+    {/* Overlay */}
     <div
-      className="absolute inset-0 bg-black/50"
+      className="absolute inset-0 bg-black/50 backdrop-blur-sm"
       onClick={() => setDrawerOpen(false)}
     />
 
     {/* Drawer panel */}
-    <div className="absolute left-0 top-0 h-full w-72 bg-background border-r border-border p-6 animate-in slide-in-from-left">
+    <div className="absolute left-0 top-0 h-full w-72 bg-background border-r border-border shadow-2xl p-6 flex flex-col animate-in slide-in-from-left duration-300">
 
-      <h2 className="text-lg font-semibold mb-6">
-        Shopeeze Menu
-      </h2>
+      {/* App title */}
+      <div className="mb-8">
+        <h2 className="text-lg font-semibold">
+          Shopeeze
+        </h2>
+        <p className="text-xs text-muted-foreground">
+          Smart shopping lists
+        </p>
+      </div>
 
-      <div className="space-y-4">
+      {/* Navigation */}
+      <div className="space-y-1">
 
-        <button className="flex items-center gap-3 w-full text-left">
-          👤 Profile
+        <p className="text-xs uppercase text-muted-foreground mb-2">
+          Navigation
+        </p>
+
+        {navItems.map((item) => (
+          <button
+            key={item.href}
+            onClick={() => navigate(item.href)}
+            className={cn(
+              "flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm transition-colors",
+              location === item.href
+                ? "bg-primary text-primary-foreground"
+                : "hover:bg-secondary"
+            )}
+          >
+            <span className="text-lg">{item.icon}</span>
+            {item.label}
+          </button>
+        ))}
+
+      </div>
+
+      {/* Divider */}
+      <div className="border-t border-border my-6" />
+
+      {/* App tools */}
+      <div className="space-y-2">
+
+        <p className="text-xs uppercase text-muted-foreground mb-2">
+          Settings
+        </p>
+
+        <button
+          onClick={() => {
+            toggleTheme();
+            setDrawerOpen(false);
+          }}
+          className="flex items-center gap-3 w-full px-3 py-2 rounded-lg hover:bg-secondary text-sm"
+        >
+          🌙 Toggle Theme
         </button>
 
-
-        <button  
-          onClick={() => {
-          toggleTheme();
-          setDrawerOpen(false);
-  }}
-       className="flex items-center gap-3 w-full text-left"
->   
-       🌙 Toggle Theme
-     </button>
-
-        <div className="flex items-center gap-3 text-sm text-muted-foreground">
+        <div className="flex items-center gap-3 px-3 py-2 text-sm text-muted-foreground">
           🟢 {onlineCount} users online
         </div>
 
-        <hr className="border-border my-2" />
+      </div>
 
-        <button
-          onClick={() => {
-            setLocation("/");
-            setDrawerOpen(false);
-          }}
-          className="flex items-center gap-3 w-full text-left"
-        >
-          📋 Lists
-        </button>
+      {/* Spacer */}
+      <div className="flex-grow" />
 
-        <button
-          onClick={() => {
-            setLocation("/database");
-            setDrawerOpen(false);
-          }}
-          className="flex items-center gap-3 w-full text-left"
-        >
-          🗄 Database
-        </button>
-
+      {/* Footer */}
+      <div className="text-xs text-muted-foreground">
+        Shopeeze v1
       </div>
 
     </div>
 
   </div>
 )}
+
       <main className="flex-1 max-w-5xl w-full mx-auto p-3 sm:p-6 lg:p-8">
         {children}
       </main>
+
     </div>
   );
 }
