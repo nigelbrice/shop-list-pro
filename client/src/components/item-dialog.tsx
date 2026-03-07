@@ -337,22 +337,39 @@ export function ItemDialog({ item, trigger, open, onOpenChange }: ItemDialogProp
                     </div>
                   </div>
                 ) : (
-                  <label
-                    htmlFor="item-photo-input"
-                    className="aspect-video rounded-xl border-2 border-dashed border-border/50 bg-secondary/30 flex flex-col items-center justify-center cursor-pointer hover:bg-secondary/50 hover:border-primary/50 transition-all group"
-                  >
-                    {isUploading ? (
-                      <Loader2 className="w-8 h-8 animate-spin text-primary/50" />
-                    ) : (
-                      <>
-                        <div className="w-12 h-12 rounded-full bg-background flex items-center justify-center mb-3 shadow-sm group-hover:scale-110 transition-transform">
-                          <Camera className="w-6 h-6 text-primary" />
-                        </div>
-                        <p className="text-sm font-medium">Tap to upload or take a photo</p>
-                        <p className="text-xs text-muted-foreground mt-1">Any image format</p>
-                      </>
-                    )}
-                  </label>
+                  <div className="flex flex-col items-center gap-3">
+
+                <Button
+                  type="button"
+                  onClick={() => {
+                    if (fileInputRef.current) {
+                      fileInputRef.current.setAttribute("capture" , "environment");
+                      fileInputRef.current.click();
+                    }
+                  }}
+                 >
+                  <Camera className="w-4 h-4 mr-2" />
+                  Take Photo
+                 </Button>
+              
+                 <Button
+                   type="button"
+                   variant="secondary"
+                   onClick={() => {
+                     if (fileInputRef.current) {
+                       fileInputRef.current.removeAttribute("capture");
+                       fileInputRef.current.click();
+                   }
+                 }}
+                 >
+                   Choose Photo
+                 </Button>
+
+                 <p className="text-xs text-muted-foreground">
+                   Take a new photo or choose one from your gallery
+                 </p>
+
+                 </div>
                 )}
                 <input
                   id="item-photo-input"
