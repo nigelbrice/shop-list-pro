@@ -12,27 +12,45 @@ export default defineConfig(async () => ({
     VitePWA({
       registerType: "autoUpdate",
       manifest: {
-        name: "Shopeeze",
-        short_name: "Shopeeze",
-        description: "Smart shared shopping lists",
-        theme_color: "#0f172a",
-        background_color: "#0f172a",
-        display: "standalone",
-        start_url: "/",
-        icons: [
-          {
-            src: "/icon-192.png",
-            sizes: "192x192",
-            type: "image/png"
-          },
-          {
-            src: "/icon-512.png",
-            sizes: "512x512",
-            type: "image/png"
-          }
-        ]
+    name: "Shopeeze",
+    short_name: "Shopeeze",
+    description: "Smart shared shopping lists",
+    theme_color: "#0f172a",
+    background_color: "#0f172a",
+    display: "standalone",
+    start_url: "/",
+    icons: [
+      {
+        src: "/icon-192.png",
+        sizes: "192x192",
+        type: "image/png"
+      },
+      {
+        src: "/icon-512.png",
+        sizes: "512x512",
+        type: "image/png"
       }
-    }),
+    ]
+  },
+
+  workbox: {
+    navigateFallback: "/",
+    runtimeCaching: [
+      {
+        urlPattern: ({ request }) => request.destination === "document",
+        handler: "NetworkFirst"
+      },
+      {
+        urlPattern: ({ request }) =>
+          request.destination === "script" ||
+          request.destination === "style" ||
+          request.destination === "image",
+        handler: "CacheFirst"
+      }
+    ]
+  }
+
+}),
 
     ...(process.env.NODE_ENV !== "production" &&
     process.env.REPL_ID !== undefined
