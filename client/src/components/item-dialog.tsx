@@ -376,7 +376,7 @@ export function ItemDialog({ item, trigger, open, onOpenChange }: ItemDialogProp
                   type="file"
                   accept="image/*"
                   ref={fileInputRef}
-                  onChange={handleImageUpload}
+                  onChange={handleFileChange}
                   className="hidden"
                 />
               </div>
