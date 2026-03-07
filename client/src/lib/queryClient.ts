@@ -1,4 +1,6 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
+import { persistQueryClient } from "@tanstack/react-query-persist-client";
+import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
@@ -24,6 +26,7 @@ export async function apiRequest(
 }
 
 type UnauthorizedBehavior = "returnNull" | "throw";
+
 export const getQueryFn: <T>(options: {
   on401: UnauthorizedBehavior;
 }) => QueryFunction<T> =
@@ -54,4 +57,18 @@ export const queryClient = new QueryClient({
       retry: false,
     },
   },
+});
+
+/* --------------------------
+   OFFLINE CACHE PERSISTENCE
+--------------------------- */
+
+const persister = createSyncStoragePersister({
+  storage: window.localStorage,
+});
+
+persistQueryClient({
+  queryClient,
+  persister,
+  maxAge: 1000 * 60 * 60 * 24, // 24 hours
 });
