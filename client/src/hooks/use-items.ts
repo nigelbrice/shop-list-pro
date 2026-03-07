@@ -4,13 +4,18 @@ import type { Item, InsertItem, UpdateItemRequest } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 import { safeFetch } from "@/lib/offlineQueue";
 
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : "Something went wrong";
+}
+
 export function useItems() {
-  return useQuery({
+  return useQuery<Item[]>({
     queryKey: [api.items.list.path],
     queryFn: async () => {
       const res = await fetch(api.items.list.path, { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch items");
-      return api.items.list.responses[200].parse(await res.json()) as Item[];
+
+      return api.items.list.responses[200].parse(await res.json());
     },
   });
 }
@@ -19,8 +24,8 @@ export function useCreateItem() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  return useMutation({
-    mutationFn: async (data: InsertItem) => {
+  return useMutation<Item | null, unknown, InsertItem, { previousItems?: Item[] }>({
+    mutationFn: async (data) => {
       const res = await safeFetch(api.items.create.path, {
         method: api.items.create.method,
         headers: { "Content-Type": "application/json" },
@@ -30,7 +35,7 @@ export function useCreateItem() {
 
       if (!res?.ok) return null;
 
-      return api.items.create.responses[201].parse(await res.json()) as Item;
+      return api.items.create.responses[201].parse(await res.json());
     },
 
     onMutate: async (newItem) => {
@@ -41,15 +46,14 @@ export function useCreateItem() {
       ]);
 
       const optimisticItem: Item = {
+        ...(newItem as Item),
         id: Date.now(),
-        name: newItem.name,
         completed: false,
-        ...newItem,
-      } as Item;  
+      };
 
-      queryClient.setQueryData<Item[]>([api.items.list.path], (old) => {
-        return old ? [...old, optimisticItem] : [optimisticItem];
-      });
+      queryClient.setQueryData<Item[]>([api.items.list.path], (old) =>
+        old ? [...old, optimisticItem] : [optimisticItem]
+      );
 
       return { previousItems };
     },
@@ -61,7 +65,7 @@ export function useCreateItem() {
 
       toast({
         title: "Error",
-        description: error.message,
+        description: getErrorMessage(error),
         variant: "destructive",
       });
     },
@@ -76,33 +80,38 @@ export function useUpdateItem() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  return useMutation({
-    mutationFn: async ({ id, ...updates }: { id: number } & UpdateItemRequest) => {
+  return useMutation<Item | undefined, unknown, { id: number } & UpdateItemRequest>({
+    mutationFn: async ({ id, ...updates }) => {
       const url = buildUrl(api.items.update.path, { id });
+
       const res = await safeFetch(url, {
         method: api.items.update.method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updates),
         credentials: "include",
       });
-      if (!res?.ok) return;
-      return api.items.update.responses[200].parse(await res.json()) as Item;
-    },
-    onSuccess: (updatedItem) => {
-  if (!updatedItem) return;
 
-  queryClient.setQueryData<Item[]>([api.items.list.path], (old) => {
-    if (!old) return old;
-    return old.map((item) =>
-      item.id === updatedItem.id ? updatedItem : item
-    );
-  });
-},
+      if (!res?.ok) return;
+
+      return api.items.update.responses[200].parse(await res.json());
+    },
+
+    onSuccess: (updatedItem) => {
+      if (!updatedItem) return;
+
+      queryClient.setQueryData<Item[]>([api.items.list.path], (old) => {
+        if (!old) return old;
+
+        return old.map((item) =>
+          item.id === updatedItem.id ? updatedItem : item
+        );
+      });
+    },
 
     onError: (error) => {
       toast({
         title: "Error",
-        description: error.message,
+        description: getErrorMessage(error),
         variant: "destructive",
       });
     },
@@ -113,26 +122,31 @@ export function useDeleteItem() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  return useMutation({
-    mutationFn: async (id: number) => {
+  return useMutation<void, unknown, number>({
+    mutationFn: async (id) => {
       const url = buildUrl(api.items.delete.path, { id });
+
       const res = await safeFetch(url, {
         method: api.items.delete.method,
         credentials: "include",
       });
+
       if (!res?.ok) return;
     },
+
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [api.items.list.path] });
+
       toast({
         title: "Item deleted",
         description: "The item has been permanently removed.",
       });
     },
+
     onError: (error) => {
       toast({
         title: "Error",
-        description: error.message,
+        description: getErrorMessage(error),
         variant: "destructive",
       });
     },
@@ -143,21 +157,24 @@ export function useReorderItems() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  return useMutation({
-    mutationFn: async (orderedIds: number[]) => {
+  return useMutation<void, unknown, number[]>({
+    mutationFn: async (orderedIds) => {
       const res = await safeFetch(api.items.reorder.path, {
         method: api.items.reorder.method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ orderedIds }),
         credentials: "include",
       });
+
       if (!res?.ok) return;
     },
+
     onError: (error) => {
       queryClient.invalidateQueries({ queryKey: [api.items.list.path] });
+
       toast({
         title: "Error",
-        description: error.message,
+        description: getErrorMessage(error),
         variant: "destructive",
       });
     },
