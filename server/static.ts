@@ -10,10 +10,11 @@ export function serveStatic(app: Express) {
     );
   }
 
-  app.use(express.static(distPath));
+ app.use("/{*path}", (req, res, next) => {
+  if (req.path.startsWith("/api")) {
+    return next(); // allow API routes to handle it
+  }
 
-  // fall through to index.html if the file doesn't exist
-  app.use("/{*path}", (_req, res) => {
-    res.sendFile(path.resolve(distPath, "index.html"));
-  });
+  res.sendFile(path.resolve(distPath, "index.html"));
+});
 }
