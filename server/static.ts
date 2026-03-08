@@ -3,23 +3,19 @@ import fs from "fs";
 import path from "path";
 
 export function serveStatic(app: Express) {
-  const distPath = path.resolve(__dirname, "public");
+  const distPath = path.join(__dirname, "public");
 
   if (!fs.existsSync(distPath)) {
-    throw new Error(
-      `Could not find the build directory: ${distPath}, make sure to build the client first`
-    );
+    throw new Error(`Missing build folder: ${distPath}`);
   }
 
+  // Serve ALL static assets
   app.use(express.static(distPath));
 
-  app.use((req, res, next) => {
-    if (
-      req.path.startsWith("/api") ||
-      req.path === "/sw.js" ||
-      req.path.startsWith("/workbox")
-    ) {
-      return next();
+  // SPA fallback (must be last)
+  app.get("*", (req, res) => {
+    if (req.path.startsWith("/api")) {
+      return res.status(404).end();
     }
 
     res.sendFile(path.join(distPath, "index.html"));
