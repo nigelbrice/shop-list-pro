@@ -14,7 +14,7 @@ export function useItems() {
   return useQuery<Item[]>({
     queryKey: [api.items.list.path],
     enabled: online,
-    staleTime: 5 * 60 * 1000, // 5 minutes instead of Infinity
+    staleTime: 5 * 60 * 1000,
     refetchOnReconnect: true,
     refetchOnWindowFocus: true,
 
@@ -83,6 +83,7 @@ export function useCreateItem() {
     },
 
     onSettled: () => {
+      // keep refetch here so real server IDs and order are synced
       queryClient.invalidateQueries({ queryKey: [api.items.list.path] });
       queryClient.invalidateQueries({ queryKey: [api.stores.list.path] });
     },
@@ -140,8 +141,8 @@ export function useUpdateItem() {
       });
     },
 
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: [api.items.list.path] });
+    onSuccess: () => {
+      // only refresh store counts
       queryClient.invalidateQueries({ queryKey: [api.stores.list.path] });
     },
   });
@@ -189,8 +190,8 @@ export function useDeleteItem() {
       });
     },
 
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: [api.items.list.path] });
+    onSuccess: () => {
+      // refresh store counts only
       queryClient.invalidateQueries({ queryKey: [api.stores.list.path] });
     },
   });
@@ -214,7 +215,6 @@ export function useReorderItems() {
 
     onError: (error) => {
       queryClient.invalidateQueries({ queryKey: [api.items.list.path] });
-      queryClient.invalidateQueries({ queryKey: [api.stores.list.path] });
 
       toast({
         title: "Error",

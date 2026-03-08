@@ -66,7 +66,9 @@ export const queryClient = new QueryClient({
       refetchOnWindowFocus: true,
       refetchOnReconnect: true,
 
-      refetchInterval: false,
+      refetchInterval: 10000, // refresh every 10 seconds
+      refetchIntervalInBackground: false,
+     
       retry: 1,
     },
     mutations: {
@@ -96,4 +98,11 @@ persistQueryClient({
 window.addEventListener("online", () => {
   console.log("Connection restored — refreshing data");
   queryClient.invalidateQueries();
+});
+
+window.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") {
+    console.log("App visible — refreshing data");
+    queryClient.invalidateQueries();
+  }
 });
