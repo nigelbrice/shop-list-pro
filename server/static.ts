@@ -7,15 +7,16 @@ export function serveStatic(app: Express) {
 
   if (!fs.existsSync(distPath)) {
     throw new Error(
-      `Could not find the build directory: ${distPath}, make sure to build the client first`,
+      `Could not find the build directory: ${distPath}, make sure to build the client first`
     );
   }
 
-  // Serve static files first
+  // 1. Serve static files (manifest.json, icons, JS, CSS, etc.)
   app.use(express.static(distPath));
 
-  // SPA fallback (for React routing)
+  // 2. SPA fallback for React routing
   app.get("*", (req, res) => {
+    // Don't intercept API routes
     if (req.path.startsWith("/api")) {
       return res.status(404).end();
     }
