@@ -19,21 +19,24 @@ function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Something went wrong";
 }
 
+/* ===============================
+   GET ITEMS (Offline First)
+================================ */
+
 export function useItems() {
   const queryClient = useQueryClient();
 
   return useQuery<Item[]>({
     queryKey: [api.items.list.path],
-    enabled: true,
     staleTime: 5 * 60 * 1000,
     refetchOnReconnect: true,
     refetchOnWindowFocus: true,
 
     queryFn: async () => {
-      // 1️⃣ Load instantly from IndexedDB
+      // 1️⃣ Load from IndexedDB instantly
       const localItems = await getItems();
 
-      // 2️⃣ Start server refresh in background
+      // 2️⃣ Refresh from server in background
       (async () => {
         try {
           const res = await safeFetch(api.items.list.path, {
@@ -44,12 +47,12 @@ export function useItems() {
             const items =
               api.items.list.responses[200].parse(await res.json());
 
-            // store latest version locally
+            // store latest items locally
             for (const item of items) {
               await saveItem({ ...item, synced: true });
             }
 
-            // update UI cache
+            // update React Query cache
             queryClient.setQueryData([api.items.list.path], items);
           }
         } catch {
@@ -63,20 +66,25 @@ export function useItems() {
   });
 }
 
+/* ===============================
+   CREATE ITEM
+================================ */
+
 export function useCreateItem() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  return useMutation<Item | null, unknown, InsertItem, { previousItems?: Item[] }>({
+  return useMutation<Item, unknown, InsertItem, { previousItems?: Item[] }>({
     mutationFn: async (data) => {
       const localItem = await saveItem({
         ...data,
         completed: false,
+        synced: false,
       });
 
       addToQueue({
         type: "create",
-        payload: data,
+        payload: localItem,
       });
 
       syncItems();
@@ -93,7 +101,7 @@ export function useCreateItem() {
 
       const optimisticItem: Item = {
         ...(newItem as Item),
-        id: Date.now(),
+        id: crypto.randomUUID(),
         completed: false,
       };
 
@@ -123,11 +131,20 @@ export function useCreateItem() {
   });
 }
 
+/* ===============================
+   UPDATE ITEM
+================================ */
+
 export function useUpdateItem() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  return useMutation<Item | undefined, unknown, { id: number } & UpdateItemRequest>({
+  return useMutation<
+    Item | undefined,
+    unknown,
+    { id: string } & UpdateItemRequest,
+    { previousItems?: Item[] }
+  >({
     mutationFn: async ({ id, ...updates }) => {
       const updated = await updateLocalItem(id, updates);
 
@@ -177,11 +194,20 @@ export function useUpdateItem() {
   });
 }
 
+/* ===============================
+   DELETE ITEM
+================================ */
+
 export function useDeleteItem() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  return useMutation<void, unknown, number, { previousItems?: Item[] }>({
+  return useMutation<
+    void,
+    unknown,
+    string,
+    { previousItems?: Item[] }
+  >({
     mutationFn: async (id) => {
       await deleteLocalItem(id);
 
