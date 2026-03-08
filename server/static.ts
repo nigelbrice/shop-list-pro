@@ -11,12 +11,11 @@ export function serveStatic(app: Express) {
     );
   }
 
-  // 1. Serve static files (manifest.json, icons, JS, CSS, etc.)
+  // 1. Serve static files
   app.use(express.static(distPath));
 
-  // 2. SPA fallback for React routing
-  app.get("*", (req, res) => {
-    // Don't intercept API routes
+  // 2. SPA fallback
+  app.get("/*", (req, res) => {
     if (req.path.startsWith("/api")) {
       return res.status(404).end();
     }
