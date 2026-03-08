@@ -9,21 +9,22 @@ function getErrorMessage(error: unknown) {
 }
 
 export function useItems() {
+  const online = navigator.onLine;
+
   return useQuery<Item[]>({
     queryKey: [api.items.list.path],
+    enabled: online,
+    staleTime: Infinity,
+    refetchOnReconnect: true,
+
     queryFn: async () => {
-      try {
-        const res = await safeFetch(api.items.list.path, {
-          credentials: "include",
-        });
+      const res = await safeFetch(api.items.list.path, {
+        credentials: "include",
+      });
 
-        if (!res?.ok) return [];
+      if (!res?.ok) throw new Error("Failed to fetch items");
 
-        return api.items.list.responses[200].parse(await res.json());
-      } catch {
-        // If offline, return empty and let React Query use cached data
-        return [];
-      }
+      return api.items.list.responses[200].parse(await res.json());
     },
   });
 }
