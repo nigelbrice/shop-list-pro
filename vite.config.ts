@@ -1,10 +1,36 @@
 import { defineConfig } from "vite";
+import { VitePWA } from "vite-plugin-pwa";
 import react from "@vitejs/plugin-react";
 import path from "path";
 
 export default defineConfig({
   plugins: [
-    react()
+    react(),
+
+    VitePWA({
+      registerType: "autoUpdate",
+      includeAssets: ["icon-192.png", "icon-512.png"],
+      manifest: {
+        name: "Shopeeze",
+        short_name: "Shopeeze",
+        theme_color: "#ffffff",
+        icons: [
+          {
+            src: "/icon-192.png",
+            sizes: "192x192",
+            type: "image/png"
+          },
+          {
+            src: "/icon-512.png",
+            sizes: "512x512",
+            type: "image/png"
+          }
+        ]
+      },
+      workbox: {
+        navigateFallback: "/index.html"
+      }
+    })
   ],
 
   resolve: {
