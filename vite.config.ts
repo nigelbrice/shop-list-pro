@@ -36,19 +36,25 @@ export default defineConfig({
   globPatterns: ["**/*.{js,css,html,ico,png,svg,webmanifest}"],
 
   runtimeCaching: [
-    {
-      urlPattern: /\/api\//,
-      handler: "NetworkOnly",
-      options: {
-        backgroundSync: {
-          name: "apiQueue",
-          options: {
-            maxRetentionTime: 24 * 60
-          }
+  {
+    urlPattern: /\/api\//,
+    handler: "NetworkFirst",
+    options: {
+      cacheName: "api-cache",
+      networkTimeoutSeconds: 3,
+      expiration: {
+        maxEntries: 50,
+        maxAgeSeconds: 24 * 60 * 60
+      },
+      backgroundSync: {
+        name: "apiQueue",
+        options: {
+          maxRetentionTime: 24 * 60
         }
       }
     }
-  ]
+  }
+]
 }
     })
   ],
