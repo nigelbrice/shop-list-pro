@@ -7,29 +7,30 @@ type OfflineAction = {
 const QUEUE_KEY = "offline-actions";
 
 export function addOfflineAction(action: OfflineAction) {
-  const queue = JSON.parse(localStorage.getItem(QUEUE_KEY) || "[]");
+  const queue: OfflineAction[] = JSON.parse(
+    localStorage.getItem(QUEUE_KEY) || "[]"
+  );
+
   queue.push(action);
+
   localStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
 }
 
-export async function safeFetch(
-  url: string,
-  options: RequestInit = {}
-) {
+export async function safeFetch(url: string, options: RequestInit = {}) {
   try {
-    const res = await fetch(url, options);
-
-    if (!res.ok) {
-      throw new Error("Request failed");
-    }
-
-    return res;
+    const response = await fetch(url, options);
+    return response;
   } catch (error) {
-    addOfflineAction({
-      url,
-      method: options.method || "GET",
-      body: options.body ? JSON.parse(options.body as string) : undefined,
-    });
+    // If offline, store request for later
+    if (!navigator.onLine) {
+      addOfflineAction({
+        url,
+        method: options.method || "GET",
+        body: options.body ? JSON.parse(options.body as string) : undefined,
+      });
+
+      return undefined;
+    }
 
     throw error;
   }
