@@ -8,25 +8,28 @@ export default defineConfig({
     react(),
 
     VitePWA({
-      registerType: "autoUpdate",
-      includeAssets: ["icon-192.png", "icon-512.png"],
-      manifest: {
-        name: "Shopeeze",
-        short_name: "Shopeeze",
-        theme_color: "#ffffff",
-        icons: [
-          {
-            src: "/icon-192.png",
-            sizes: "192x192",
-            type: "image/png"
-          },
-          {
-            src: "/icon-512.png",
-            sizes: "512x512",
-            type: "image/png"
-          }
-        ]
+  strategies: "generateSW",
+  registerType: "autoUpdate",
+
+  includeAssets: ["icon-192.png", "icon-512.png"],
+
+  manifest: {
+    name: "Shopeeze",
+    short_name: "Shopeeze",
+    theme_color: "#ffffff",
+    icons: [
+      {
+        src: "/icon-192.png",
+        sizes: "192x192",
+        type: "image/png"
       },
+      {
+        src: "/icon-512.png",
+        sizes: "512x512",
+        type: "image/png"
+      }
+    ]
+  },
 
      workbox: {
   navigateFallback: "/index.html",
