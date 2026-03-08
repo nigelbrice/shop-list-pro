@@ -14,12 +14,15 @@ export function serveStatic(app: Express) {
   // 1. Serve static files
   app.use(express.static(distPath));
 
-  // 2. SPA fallback
-  app.get("/*", (req, res) => {
-    if (req.path.startsWith("/api")) {
-      return res.status(404).end();
-    }
+  // SPA fallback for React routing
+app.get("/:path(*)", (req, res) => {
 
-    res.sendFile(path.resolve(distPath, "index.html"));
-  });
+  // Don't intercept API routes
+  if (req.path.startsWith("/api")) {
+    return res.status(404).end();
+  }
+
+  res.sendFile(path.resolve(distPath, "index.html"));
+});
+
 }
