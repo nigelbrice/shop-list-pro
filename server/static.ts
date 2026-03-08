@@ -4,17 +4,22 @@ import path from "path";
 
 export function serveStatic(app: Express) {
   const distPath = path.resolve(__dirname, "public");
+
   if (!fs.existsSync(distPath)) {
     throw new Error(
       `Could not find the build directory: ${distPath}, make sure to build the client first`,
     );
   }
 
- app.use("/{*path}", (req, res, next) => {
-  if (req.path.startsWith("/api")) {
-    return next(); // allow API routes to handle it
-  }
+  // Serve static files first
+  app.use(express.static(distPath));
 
-  res.sendFile(path.resolve(distPath, "index.html"));
-});
+  // SPA fallback (for React routing)
+  app.get("*", (req, res) => {
+    if (req.path.startsWith("/api")) {
+      return res.status(404).end();
+    }
+
+    res.sendFile(path.resolve(distPath, "index.html"));
+  });
 }
