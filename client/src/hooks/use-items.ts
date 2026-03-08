@@ -20,6 +20,8 @@ function getErrorMessage(error: unknown) {
 }
 
 export function useItems() {
+  const queryClient = useQueryClient();
+
   return useQuery<Item[]>({
     queryKey: [api.items.list.path],
     enabled: true,
@@ -28,27 +30,35 @@ export function useItems() {
     refetchOnWindowFocus: true,
 
     queryFn: async () => {
-      try {
-        const res = await safeFetch(api.items.list.path, {
-          credentials: "include",
-        });
+      // 1️⃣ Load instantly from IndexedDB
+      const localItems = await getItems();
 
-        if (res?.ok) {
-          const items = api.items.list.responses[200].parse(await res.json());
+      // 2️⃣ Start server refresh in background
+      (async () => {
+        try {
+          const res = await safeFetch(api.items.list.path, {
+            credentials: "include",
+          });
 
-          // store locally for offline
-          for (const item of items) {
-            await saveItem({ ...item, synced: true });
+          if (res?.ok) {
+            const items =
+              api.items.list.responses[200].parse(await res.json());
+
+            // store latest version locally
+            for (const item of items) {
+              await saveItem({ ...item, synced: true });
+            }
+
+            // update UI cache
+            queryClient.setQueryData([api.items.list.path], items);
           }
-
-          return items;
+        } catch {
+          // ignore network failures
         }
-      } catch {
-        // ignore network errors
-      }
+      })();
 
-      // fallback to localDB
-      return (await getItems()) as Item[];
+      // 3️⃣ Return local data immediately
+      return localItems as Item[];
     },
   });
 }

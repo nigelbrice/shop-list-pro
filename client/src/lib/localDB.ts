@@ -148,3 +148,34 @@ export async function markItemSynced(id: string) {
     req.onerror = () => reject(req.error);
   });
 }
+export async function updateLocalItem(id: number, updates: Partial<any>) {
+  const items = await getItems();
+
+  const item = items.find((i) => i.id === id);
+  if (!item) return;
+
+  const updated = {
+    ...item,
+    ...updates,
+    synced: false,
+    updatedAt: Date.now(),
+  };
+
+  await saveItem(updated);
+
+  return updated;
+}
+
+export async function deleteLocalItem(id: number) {
+  const db = await openDB();
+
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction("items", "readwrite");
+    const store = tx.objectStore("items");
+
+    const req = store.delete(id);
+
+    req.onsuccess = () => resolve(true);
+    req.onerror = () => reject(req.error);
+  });
+}
