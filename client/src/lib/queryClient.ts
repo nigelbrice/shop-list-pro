@@ -60,10 +60,14 @@ export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       queryFn: getQueryFn({ on401: "throw" }),
+
+      // IMPORTANT CHANGES
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      refetchOnWindowFocus: true,
+      refetchOnReconnect: true,
+
       refetchInterval: false,
-      refetchOnWindowFocus: false,
-      staleTime: Infinity,
-      retry: false,
+      retry: 1,
     },
     mutations: {
       retry: false,
@@ -83,4 +87,13 @@ persistQueryClient({
   queryClient,
   persister,
   maxAge: 1000 * 60 * 60 * 24, // 24 hours
+});
+
+/* --------------------------
+   REFRESH WHEN CONNECTION RETURNS
+--------------------------- */
+
+window.addEventListener("online", () => {
+  console.log("Connection restored — refreshing data");
+  queryClient.invalidateQueries();
 });

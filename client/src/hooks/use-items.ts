@@ -14,8 +14,9 @@ export function useItems() {
   return useQuery<Item[]>({
     queryKey: [api.items.list.path],
     enabled: online,
-    staleTime: Infinity,
+    staleTime: 5 * 60 * 1000, // 5 minutes instead of Infinity
     refetchOnReconnect: true,
+    refetchOnWindowFocus: true,
 
     queryFn: async () => {
       const res = await safeFetch(api.items.list.path, {
@@ -44,10 +45,7 @@ export function useCreateItem() {
 
       if (!res?.ok) return null;
 
-      // Skip parsing when offline queue response
-      if (res.status === 202) {
-        return null;
-      }
+      if (res.status === 202) return null;
 
       return api.items.create.responses[201].parse(await res.json());
     },
@@ -86,6 +84,7 @@ export function useCreateItem() {
 
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: [api.items.list.path] });
+      queryClient.invalidateQueries({ queryKey: [api.stores.list.path] });
     },
   });
 }
@@ -106,7 +105,6 @@ export function useUpdateItem() {
       });
 
       if (!res?.ok) return;
-
       if (res.status === 202) return;
 
       return api.items.update.responses[200].parse(await res.json());
@@ -144,6 +142,7 @@ export function useUpdateItem() {
 
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: [api.items.list.path] });
+      queryClient.invalidateQueries({ queryKey: [api.stores.list.path] });
     },
   });
 }
@@ -192,6 +191,7 @@ export function useDeleteItem() {
 
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: [api.items.list.path] });
+      queryClient.invalidateQueries({ queryKey: [api.stores.list.path] });
     },
   });
 }
@@ -214,6 +214,7 @@ export function useReorderItems() {
 
     onError: (error) => {
       queryClient.invalidateQueries({ queryKey: [api.items.list.path] });
+      queryClient.invalidateQueries({ queryKey: [api.stores.list.path] });
 
       toast({
         title: "Error",
