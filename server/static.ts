@@ -1,21 +1,24 @@
-import express, { type Express } from "express";
+import { type Express } from "express";
 import fs from "fs";
 import path from "path";
+import express from "express";
 
 export function serveStatic(app: Express) {
   const distPath = path.join(__dirname, "public");
 
   if (!fs.existsSync(distPath)) {
-    throw new Error(`Missing build folder: ${distPath}`);
+    throw new Error(
+      `Could not find build directory: ${distPath}. Run the client build first.`
+    );
   }
 
-  // Serve ALL static assets
+  // Serve static files
   app.use(express.static(distPath));
 
-  // SPA fallback (must be last)
-  app.get("*", (req, res) => {
+  // SPA fallback (Express 5 safe)
+  app.use((req, res, next) => {
     if (req.path.startsWith("/api")) {
-      return res.status(404).end();
+      return next();
     }
 
     res.sendFile(path.join(distPath, "index.html"));

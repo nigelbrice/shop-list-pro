@@ -28,25 +28,25 @@ export default defineConfig({
         ]
       },
 
-      workbox: {
-        navigateFallback: "/index.html",
-        globPatterns: ["**/*.{js,css,html,ico,png,svg}"],
+     workbox: {
+  navigateFallback: "/index.html",
+  globPatterns: ["**/*.{js,css,html,ico,png,svg,webmanifest}"],
 
-        runtimeCaching: [
-          {
-            urlPattern: /\/api\//,
-            handler: "NetworkOnly",
-            options: {
-              backgroundSync: {
-                name: "apiQueue",
-                options: {
-                  maxRetentionTime: 24 * 60
-                }
-              }
-            }
+  runtimeCaching: [
+    {
+      urlPattern: /\/api\//,
+      handler: "NetworkOnly",
+      options: {
+        backgroundSync: {
+          name: "apiQueue",
+          options: {
+            maxRetentionTime: 24 * 60
           }
-        ]
+        }
       }
+    }
+  ]
+}
     })
   ],
 
