@@ -52,7 +52,7 @@ async function getStore(mode: IDBTransactionMode) {
 
 export async function saveItem(item: Partial<LocalItem>) {
   const store = await getStore("readwrite");
-
+  console.log("Saving item locally:", record);
   const record: LocalItem = {
     id: item.id ?? crypto.randomUUID(),
     name: item.name ?? "",
