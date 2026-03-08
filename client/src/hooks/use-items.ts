@@ -12,7 +12,7 @@ export function useItems() {
   return useQuery<Item[]>({
     queryKey: [api.items.list.path],
     queryFn: async () => {
-      const res = await fetch(api.items.list.path, { credentials: "include" });
+      const res = await safeFetch(api.items.list.path, { credentials: "include" });
       if (!res.ok) throw new Error("Failed to fetch items");
 
       return api.items.list.responses[200].parse(await res.json());
@@ -96,33 +96,47 @@ export function useUpdateItem() {
       return api.items.update.responses[200].parse(await res.json());
     },
 
-    onSuccess: (updatedItem) => {
-      if (!updatedItem) return;
+    onMutate: async ({ id, ...updates }) => {
+  await queryClient.cancelQueries({ queryKey: [api.items.list.path] });
 
-      queryClient.setQueryData<Item[]>([api.items.list.path], (old) => {
-        if (!old) return old;
+  const previousItems = queryClient.getQueryData<Item[]>([
+    api.items.list.path,
+  ]);
 
-        return old.map((item) =>
-          item.id === updatedItem.id ? updatedItem : item
-        );
-      });
-    },
+  queryClient.setQueryData<Item[]>([api.items.list.path], (old) =>
+    old
+      ? old.map((item) =>
+          item.id === id ? { ...item, ...updates } : item
+        )
+      : old
+  );
 
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: getErrorMessage(error),
-        variant: "destructive",
-      });
-    },
+  return { previousItems };
+},
+
+onError: (error, _vars, context) => {
+  if (context?.previousItems) {
+    queryClient.setQueryData([api.items.list.path], context.previousItems);
+  }
+
+  toast({
+    title: "Error",
+    description: getErrorMessage(error),
+    variant: "destructive",
   });
+},
+
+onSettled: () => {
+  queryClient.invalidateQueries({ queryKey: [api.items.list.path] });
+},
+});
 }
 
 export function useDeleteItem() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  return useMutation<void, unknown, number>({
+  return useMutation<void, unknown, number, { previousItems?: Item[] }>({
     mutationFn: async (id) => {
       const url = buildUrl(api.items.delete.path, { id });
 
@@ -134,21 +148,34 @@ export function useDeleteItem() {
       if (!res?.ok) return;
     },
 
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [api.items.list.path] });
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: [api.items.list.path] });
 
-      toast({
-        title: "Item deleted",
-        description: "The item has been permanently removed.",
-      });
+      const previousItems = queryClient.getQueryData<Item[]>([
+        api.items.list.path,
+      ]);
+
+      queryClient.setQueryData<Item[]>([api.items.list.path], (old) =>
+        old ? old.filter((item) => item.id !== id) : []
+      );
+
+      return { previousItems };
     },
 
-    onError: (error) => {
+    onError: (error, _id, context) => {
+      if (context?.previousItems) {
+        queryClient.setQueryData([api.items.list.path], context.previousItems);
+      }
+
       toast({
         title: "Error",
         description: getErrorMessage(error),
         variant: "destructive",
       });
+    },
+
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: [api.items.list.path] });
     },
   });
 }

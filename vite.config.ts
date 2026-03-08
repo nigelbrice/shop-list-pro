@@ -27,9 +27,25 @@ export default defineConfig({
           }
         ]
       },
+
       workbox: {
         navigateFallback: "/index.html",
-        globPatterns: ["**/*.{js,css,html,ico,png,svg}"]
+        globPatterns: ["**/*.{js,css,html,ico,png,svg}"],
+
+        runtimeCaching: [
+          {
+            urlPattern: /\/api\//,
+            handler: "NetworkOnly",
+            options: {
+              backgroundSync: {
+                name: "apiQueue",
+                options: {
+                  maxRetentionTime: 24 * 60
+                }
+              }
+            }
+          }
+        ]
       }
     })
   ],
