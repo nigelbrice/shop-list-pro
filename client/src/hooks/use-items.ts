@@ -1,31 +1,54 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { api, buildUrl } from "@shared/routes";
+import { api } from "@shared/routes";
 import type { Item, InsertItem, UpdateItemRequest } from "@shared/schema";
+
 import { useToast } from "@/hooks/use-toast";
 import { safeFetch } from "@/lib/offlineQueue";
+
+import {
+  saveItem,
+  getItems,
+  updateLocalItem,
+  deleteLocalItem,
+} from "@/lib/localDB";
+
+import { syncItems } from "@/lib/sync";
+import { addToQueue } from "@/lib/changeQueue";
 
 function getErrorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Something went wrong";
 }
 
 export function useItems() {
-  const online = navigator.onLine;
-
   return useQuery<Item[]>({
     queryKey: [api.items.list.path],
-    enabled: online,
+    enabled: true,
     staleTime: 5 * 60 * 1000,
     refetchOnReconnect: true,
     refetchOnWindowFocus: true,
 
     queryFn: async () => {
-      const res = await safeFetch(api.items.list.path, {
-        credentials: "include",
-      });
+      try {
+        const res = await safeFetch(api.items.list.path, {
+          credentials: "include",
+        });
 
-      if (!res?.ok) throw new Error("Failed to fetch items");
+        if (res?.ok) {
+          const items = api.items.list.responses[200].parse(await res.json());
 
-      return api.items.list.responses[200].parse(await res.json());
+          // store locally for offline
+          for (const item of items) {
+            await saveItem({ ...item, synced: true });
+          }
+
+          return items;
+        }
+      } catch {
+        // ignore network errors
+      }
+
+      // fallback to localDB
+      return (await getItems()) as Item[];
     },
   });
 }
@@ -36,18 +59,19 @@ export function useCreateItem() {
 
   return useMutation<Item | null, unknown, InsertItem, { previousItems?: Item[] }>({
     mutationFn: async (data) => {
-      const res = await safeFetch(api.items.create.path, {
-        method: api.items.create.method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data),
-        credentials: "include",
+      const localItem = await saveItem({
+        ...data,
+        completed: false,
       });
 
-      if (!res?.ok) return null;
+      addToQueue({
+        type: "create",
+        payload: data,
+      });
 
-      if (res.status === 202) return null;
+      syncItems();
 
-      return api.items.create.responses[201].parse(await res.json());
+      return localItem as Item;
     },
 
     onMutate: async (newItem) => {
@@ -83,7 +107,6 @@ export function useCreateItem() {
     },
 
     onSettled: () => {
-      // keep refetch here so real server IDs and order are synced
       queryClient.invalidateQueries({ queryKey: [api.items.list.path] });
       queryClient.invalidateQueries({ queryKey: [api.stores.list.path] });
     },
@@ -96,19 +119,16 @@ export function useUpdateItem() {
 
   return useMutation<Item | undefined, unknown, { id: number } & UpdateItemRequest>({
     mutationFn: async ({ id, ...updates }) => {
-      const url = buildUrl(api.items.update.path, { id });
+      const updated = await updateLocalItem(id, updates);
 
-      const res = await safeFetch(url, {
-        method: api.items.update.method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updates),
-        credentials: "include",
+      addToQueue({
+        type: "update",
+        payload: { id, updates },
       });
 
-      if (!res?.ok) return;
-      if (res.status === 202) return;
+      syncItems();
 
-      return api.items.update.responses[200].parse(await res.json());
+      return updated as Item;
     },
 
     onMutate: async ({ id, ...updates }) => {
@@ -142,7 +162,6 @@ export function useUpdateItem() {
     },
 
     onSuccess: () => {
-      // only refresh store counts
       queryClient.invalidateQueries({ queryKey: [api.stores.list.path] });
     },
   });
@@ -154,14 +173,14 @@ export function useDeleteItem() {
 
   return useMutation<void, unknown, number, { previousItems?: Item[] }>({
     mutationFn: async (id) => {
-      const url = buildUrl(api.items.delete.path, { id });
+      await deleteLocalItem(id);
 
-      const res = await safeFetch(url, {
-        method: api.items.delete.method,
-        credentials: "include",
+      addToQueue({
+        type: "delete",
+        payload: { id },
       });
 
-      if (!res?.ok) return;
+      syncItems();
     },
 
     onMutate: async (id) => {
@@ -191,36 +210,7 @@ export function useDeleteItem() {
     },
 
     onSuccess: () => {
-      // refresh store counts only
       queryClient.invalidateQueries({ queryKey: [api.stores.list.path] });
-    },
-  });
-}
-
-export function useReorderItems() {
-  const queryClient = useQueryClient();
-  const { toast } = useToast();
-
-  return useMutation<void, unknown, number[]>({
-    mutationFn: async (orderedIds) => {
-      const res = await safeFetch(api.items.reorder.path, {
-        method: api.items.reorder.method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderedIds }),
-        credentials: "include",
-      });
-
-      if (!res?.ok) return;
-    },
-
-    onError: (error) => {
-      queryClient.invalidateQueries({ queryKey: [api.items.list.path] });
-
-      toast({
-        title: "Error",
-        description: getErrorMessage(error),
-        variant: "destructive",
-      });
     },
   });
 }
