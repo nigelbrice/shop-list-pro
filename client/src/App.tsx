@@ -1,6 +1,4 @@
 import { Switch, Route, useLocation } from "wouter";
-import OfflineBanner from "@/components/OfflineBanner";
-import OfflineIndicator from "@/components/OfflineIndicator";
 
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -18,6 +16,34 @@ import ShoppingList from "@/pages/shopping-list";
 import Database from "@/pages/database";
 import Login from "@/pages/login";
 
+import { useEffect, useState } from "react";
+
+function NetworkStatus() {
+  const [online, setOnline] = useState(navigator.onLine);
+
+  useEffect(() => {
+    const goOnline = () => setOnline(true);
+    const goOffline = () => setOnline(false);
+
+    window.addEventListener("online", goOnline);
+    window.addEventListener("offline", goOffline);
+
+    return () => {
+      window.removeEventListener("online", goOnline);
+      window.removeEventListener("offline", goOffline);
+    };
+  }, []);
+
+  if (online) return null;
+
+  return (
+    <div className="fixed bottom-0 left-0 right-0 z-50">
+      <div className="bg-orange-500 text-white text-center py-2 text-sm">
+        ⚠ Offline mode — changes will sync automatically
+      </div>
+    </div>
+  );
+}
 
 function AppInner() {
   const { data: auth, isLoading } = useAuth();
@@ -48,15 +74,13 @@ function AppInner() {
   );
 }
 
-
 function App() {
   return (
     <ThemeProvider>
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
 
-          <OfflineBanner />
-          <OfflineIndicator />
+          <NetworkStatus />
 
           <Toaster />
 
