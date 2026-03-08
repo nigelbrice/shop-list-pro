@@ -21,7 +21,6 @@ export async function safeFetch(url: string, options: RequestInit = {}) {
     const response = await fetch(url, options);
     return response;
   } catch (error) {
-    // If offline, store request for later
     if (!navigator.onLine) {
       addOfflineAction({
         url,
@@ -29,7 +28,11 @@ export async function safeFetch(url: string, options: RequestInit = {}) {
         body: options.body ? JSON.parse(options.body as string) : undefined,
       });
 
-      return undefined;
+      // Return fake success response so UI continues
+      return new Response(
+        JSON.stringify({ offline: true }),
+        { status: 202, headers: { "Content-Type": "application/json" } }
+      );
     }
 
     throw error;

@@ -44,6 +44,11 @@ export function useCreateItem() {
 
       if (!res?.ok) return null;
 
+      // Skip parsing when offline queue response
+      if (res.status === 202) {
+        return null;
+      }
+
       return api.items.create.responses[201].parse(await res.json());
     },
 
@@ -102,43 +107,45 @@ export function useUpdateItem() {
 
       if (!res?.ok) return;
 
+      if (res.status === 202) return;
+
       return api.items.update.responses[200].parse(await res.json());
     },
 
     onMutate: async ({ id, ...updates }) => {
-  await queryClient.cancelQueries({ queryKey: [api.items.list.path] });
+      await queryClient.cancelQueries({ queryKey: [api.items.list.path] });
 
-  const previousItems = queryClient.getQueryData<Item[]>([
-    api.items.list.path,
-  ]);
+      const previousItems = queryClient.getQueryData<Item[]>([
+        api.items.list.path,
+      ]);
 
-  queryClient.setQueryData<Item[]>([api.items.list.path], (old) =>
-    old
-      ? old.map((item) =>
-          item.id === id ? { ...item, ...updates } : item
-        )
-      : old
-  );
+      queryClient.setQueryData<Item[]>([api.items.list.path], (old) =>
+        old
+          ? old.map((item) =>
+              item.id === id ? { ...item, ...updates } : item
+            )
+          : old
+      );
 
-  return { previousItems };
-},
+      return { previousItems };
+    },
 
-onError: (error, _vars, context) => {
-  if (context?.previousItems) {
-    queryClient.setQueryData([api.items.list.path], context.previousItems);
-  }
+    onError: (error, _vars, context) => {
+      if (context?.previousItems) {
+        queryClient.setQueryData([api.items.list.path], context.previousItems);
+      }
 
-  toast({
-    title: "Error",
-    description: getErrorMessage(error),
-    variant: "destructive",
+      toast({
+        title: "Error",
+        description: getErrorMessage(error),
+        variant: "destructive",
+      });
+    },
+
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: [api.items.list.path] });
+    },
   });
-},
-
-onSettled: () => {
-  queryClient.invalidateQueries({ queryKey: [api.items.list.path] });
-},
-});
 }
 
 export function useDeleteItem() {
