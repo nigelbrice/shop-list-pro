@@ -11,18 +11,15 @@ export function serveStatic(app: Express) {
     );
   }
 
-  // 1. Serve static files
+  // Serve static files
   app.use(express.static(distPath));
 
-  // SPA fallback for React routing
-app.get("/:path(*)", (req, res) => {
+  // SPA fallback
+  app.use((req, res, next) => {
+    if (req.path.startsWith("/api")) {
+      return next();
+    }
 
-  // Don't intercept API routes
-  if (req.path.startsWith("/api")) {
-    return res.status(404).end();
-  }
-
-  res.sendFile(path.resolve(distPath, "index.html"));
-});
-
+    res.sendFile(path.resolve(distPath, "index.html"));
+  });
 }
