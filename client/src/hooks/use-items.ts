@@ -12,10 +12,18 @@ export function useItems() {
   return useQuery<Item[]>({
     queryKey: [api.items.list.path],
     queryFn: async () => {
-      const res = await safeFetch(api.items.list.path, { credentials: "include" });
-      if (!res.ok) throw new Error("Failed to fetch items");
+      try {
+        const res = await safeFetch(api.items.list.path, {
+          credentials: "include",
+        });
 
-      return api.items.list.responses[200].parse(await res.json());
+        if (!res?.ok) return [];
+
+        return api.items.list.responses[200].parse(await res.json());
+      } catch {
+        // If offline, return empty and let React Query use cached data
+        return [];
+      }
     },
   });
 }
