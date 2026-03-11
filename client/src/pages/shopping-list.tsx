@@ -4,8 +4,6 @@ import { useStoreContext, aisleOrder } from "@/context/store-context";
 import {
   ShoppingBag,
   CheckCircle2,
-  Minus,
-  Plus,
   Check,
   Package
 } from "lucide-react";
@@ -110,7 +108,6 @@ function StoreListRow({ listItem }: { listItem: StoreListItem }) {
   const {
     selectedStoreId,
     updateItemQuantity,
-    toggleItemCompleted,
     removeItemFromStore
   } = useStoreContext();
 
@@ -153,9 +150,9 @@ function StoreListRow({ listItem }: { listItem: StoreListItem }) {
             variant="ghost"
             size="icon"
             className="w-9 h-9 rounded-full border-2 border-primary/20"
-            onClick={() => {                   
+            onClick={() =>
               removeItemFromStore(selectedStoreId!, listItem.id)
-            }}
+            }
           >
             <Check className="w-4 h-4 text-primary" />
           </Button>
@@ -182,31 +179,33 @@ function StoreListRow({ listItem }: { listItem: StoreListItem }) {
 
         </div>
 
-        {/* RIGHT */}
+        {/* RIGHT – MOBILE FRIENDLY QUANTITY CONTROL */}
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-1 bg-secondary/40 rounded-xl px-2 py-1">
 
           <Button
             variant="ghost"
             size="icon"
+            className="h-8 w-8"
             onClick={() =>
               updateItemQuantity(
                 selectedStoreId!,
                 listItem.id,
-                Math.max(1, listItem.quantity - 1)
+                listItem.quantity - 1
               )
             }
           >
-            <Minus className="w-4 h-4" />
+            -
           </Button>
 
-          <span className="w-10 text-center font-bold text-xl">
+          <span className="w-6 text-center text-sm font-semibold">
             {listItem.quantity}
           </span>
 
           <Button
             variant="ghost"
             size="icon"
+            className="h-8 w-8"
             onClick={() =>
               updateItemQuantity(
                 selectedStoreId!,
@@ -215,7 +214,7 @@ function StoreListRow({ listItem }: { listItem: StoreListItem }) {
               )
             }
           >
-            <Plus className="w-4 h-4" />
+            +
           </Button>
 
         </div>
@@ -277,32 +276,32 @@ function SortableCategory({
 export default function ShoppingList(){
 
   const {
-  selectedStoreId,
-  setSelectedStoreId,
-  stores,
-  storeLists,
-  sortByAisle: aisleSortingEnabled
-} = useStoreContext();
+    selectedStoreId,
+    setSelectedStoreId,
+    stores,
+    storeLists,
+    sortByAisle: aisleSortingEnabled
+  } = useStoreContext();
 
   const [orderedItems,setOrderedItems] = useState<StoreListItem[]>([]);
   const [categoryOrder,setCategoryOrder] = useState<string[]>([]);
 
   useEffect(() => {
 
-  if (!selectedStoreId) {
-    setOrderedItems([]);
-    return;
-  }
+    if (!selectedStoreId) {
+      setOrderedItems([]);
+      return;
+    }
 
-  const items = storeLists[selectedStoreId] || [];
+    const items = storeLists[selectedStoreId] || [];
 
-  if (aisleSortingEnabled) {
-    setOrderedItems(sortByAisle(items));
-  } else {
-    setOrderedItems(items);
-  }
+    if (aisleSortingEnabled) {
+      setOrderedItems(sortByAisle(items));
+    } else {
+      setOrderedItems(items);
+    }
 
-}, [selectedStoreId, storeLists, aisleSortingEnabled]);
+  }, [selectedStoreId, storeLists, aisleSortingEnabled]);
 
   useEffect(()=>{
 
