@@ -2,37 +2,43 @@ import { useEffect, useRef } from "react";
 import { Html5Qrcode } from "html5-qrcode";
 
 type Props = {
-
   onScan: (barcode: string) => void;
   onClose: () => void;
 };
 
-
-
 export default function BarcodeScanner({ onScan, onClose }: Props) {
 
   const scannedRef = useRef(false);
+  const scannerRef = useRef<Html5Qrcode | null>(null);
 
   useEffect(() => {
+
+    scannedRef.current = false;
 
     const scanner = new Html5Qrcode("scanner");
- 
-  useEffect(() => {
-  scannedRef.current = false;
-}, []);
+    scannerRef.current = scanner;
 
     scanner.start(
       { facingMode: "environment" },
-      { fps: 10, qrbox: 250 },
+      { fps: 10, qrbox: { width: 280, height: 200 } },
       (decodedText) => {
-        scanner.stop();
+
+        if (scannedRef.current) return;
+        scannedRef.current = true;
+
+        scanner.stop().catch(() => {});
         onScan(decodedText);
+
       },
       () => {}
-    );
+    ).catch(err => {
+      console.error("Scanner failed to start:", err);
+    });
 
     return () => {
-      scanner.stop().catch(() => {});
+      if (scannerRef.current) {
+        scannerRef.current.stop().catch(() => {});
+      }
     };
 
   }, [onScan]);
@@ -46,7 +52,12 @@ export default function BarcodeScanner({ onScan, onClose }: Props) {
       />
 
       <button
-        onClick={onClose}
+        onClick={() => {
+          if (scannerRef.current) {
+            scannerRef.current.stop().catch(() => {});
+          }
+          onClose();
+        }}
         className="text-sm text-muted-foreground"
       >
         Cancel
