@@ -107,13 +107,14 @@ export function ItemCard({ item }: { item: Item }) {
 
   return (
     <div
-      className={`bg-card border rounded-2xl p-4 flex flex-col gap-3 transition shadow-sm hover:shadow-md ${
-        isAdded ? "border-green-500/60 opacity-80" : ""
-      }`}
+  className={`bg-card border rounded-xl p-2 sm:p-4 flex flex-col gap-2 sm:gap-3 transition shadow-sm hover:shadow-md ${
+    isAdded ? "border-green-500/60 opacity-80" : ""
+  }`}
+>
     >
       {/* IMAGE */}
 
-      <div className="w-full aspect-square rounded-xl overflow-hidden bg-secondary/30 flex items-center justify-center">
+      <div className="w-full aspect-square rounded-lg overflow-hidden bg-secondary/30 flex items-center justify-center">
         {item.imageUrl ? (
           <img
             src={item.imageUrl}
@@ -130,7 +131,7 @@ export function ItemCard({ item }: { item: Item }) {
       {/* TEXT INFO */}
 
       <div className="space-y-1">
-        <p className="font-semibold text-base leading-tight">
+        <p className="font-semibold text-sm sm:text-base leading-tight">
           {item.name}
         </p>
 
@@ -140,7 +141,7 @@ export function ItemCard({ item }: { item: Item }) {
           </p>
         )}
 
-        <p className="text-xs text-muted-foreground">
+        <p className="text-xs sm:text-sm text-muted-foreground">
           {preferredStore
             ? `Preferred: ${preferredStore.name}`
             : selectedStoreId
@@ -153,7 +154,7 @@ export function ItemCard({ item }: { item: Item }) {
 
       {/* ACTION BUTTONS */}
 
-      <div className="flex justify-between pt-2">
+      <div className="flex justify-between pt-1">
         <Button
           variant={isAdded ? "default" : "outline"}
           size="sm"
