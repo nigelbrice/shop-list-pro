@@ -1,20 +1,13 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { Html5Qrcode } from "html5-qrcode";
 
 type Props = {
-  onDetected={(result) => {
 
-  if (scannedRef.current) return;
+  onScan: (barcode: string) => void;
+  onClose: () => void;
+};
 
-  scannedRef.current = true;
 
-  const barcode = result.codeResult.code;
-
-  if (barcode) {
-    onScan(barcode);
-  }
-
-}
 
 export default function BarcodeScanner({ onScan, onClose }: Props) {
 
