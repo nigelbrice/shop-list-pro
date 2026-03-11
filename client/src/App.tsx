@@ -1,13 +1,16 @@
 import { Switch, Route, useLocation } from "wouter";
+import { useEffect, useState } from "react";
 
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 
-import { Toaster } from "@/components/ui/toaster";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { Layout } from "@/components/layout";
+import { ItemsProvider } from "@/context/items-context";
 import { StoreProvider } from "@/context/store-context";
+
 import { ThemeProvider } from "@/components/theme-provider";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import { Toaster } from "@/components/ui/toaster";
+import { Layout } from "@/components/layout";
 
 import { useAuth } from "@/hooks/use-auth";
 
@@ -15,8 +18,6 @@ import NotFound from "@/pages/not-found";
 import ShoppingList from "@/pages/shopping-list";
 import Database from "@/pages/database";
 import Login from "@/pages/login";
-
-import { useEffect, useState } from "react";
 
 function NetworkStatus() {
   const [online, setOnline] = useState(navigator.onLine);
@@ -62,34 +63,36 @@ function AppInner() {
   }
 
   return (
-    <StoreProvider>
-      <Layout auth={auth}>
-        <Switch>
-          <Route path="/" component={ShoppingList} />
-          <Route path="/database" component={Database} />
-          <Route component={NotFound} />
-        </Switch>
-      </Layout>
-    </StoreProvider>
+    <Layout auth={auth}>
+      <Switch>
+        <Route path="/" component={ShoppingList} />
+        <Route path="/database" component={Database} />
+        <Route component={NotFound} />
+      </Switch>
+    </Layout>
   );
 }
 
-function App() {
+export default function App() {
   return (
     <ThemeProvider>
       <QueryClientProvider client={queryClient}>
         <TooltipProvider>
 
-          <NetworkStatus />
+          <ItemsProvider>
+            <StoreProvider>
 
-          <Toaster />
+              <NetworkStatus />
 
-          <AppInner />
+              <Toaster />
+
+              <AppInner />
+
+            </StoreProvider>
+          </ItemsProvider>
 
         </TooltipProvider>
       </QueryClientProvider>
     </ThemeProvider>
   );
 }
-
-export default App;

@@ -133,14 +133,25 @@ export async function registerRoutes(httpServer: Server, app: Express): Promise<
 
   // ── Store List ─────────────────────────────────────────────────────────────
   app.get(api.stores.getList.path, requireAuth, async (req, res) => {
-    try {
-      const storeId = parseInt(req.params.storeId, 10);
-      if (isNaN(storeId)) return res.status(400).json({ message: "Invalid store ID" });
-      res.json(await storage.getStoreList(storeId));
-    } catch {
-      res.status(500).json({ message: "Failed to fetch store list" });
+  try {
+    const storeId = parseInt(req.params.storeId, 10);
+
+    if (isNaN(storeId)) {
+      return res.status(400).json({ message: "Invalid store ID" });
     }
-  });
+
+    const list = await storage.getStoreList(storeId);
+
+    res.json(list);
+  } catch (err) {
+    console.error("STORE LIST ERROR:", err);
+
+    res.status(500).json({
+      message: "Failed to fetch store list",
+      error: String(err),
+    });
+  }
+});
 
   app.post(api.stores.reorderList.path, requireAuth, async (req, res) => {
     try {

@@ -17,6 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { useStoreContext } from "@/context/store-context";
 
 function MemberMenu({ auth }: { auth: AuthState }) {
   const [showAddForm, setShowAddForm] = useState(false);
@@ -159,6 +160,13 @@ export function Layout({ children, auth }: { children: React.ReactNode; auth: Au
   const { toggleTheme } = useTheme();
   const [drawerOpen, setDrawerOpen] = useState(false);
 
+  const { addStore } = useStoreContext();
+
+const [showAddStore, setShowAddStore] = useState(false);
+const [newStoreName, setNewStoreName] = useState("");
+
+  const { sortByAisle, setSortByAisle } = useStoreContext();
+
   const handlePresenceChange = useCallback((count: number) => {
     setOnlineCount(count);
   }, []);
@@ -258,18 +266,87 @@ export function Layout({ children, auth }: { children: React.ReactNode; auth: Au
       <div className="space-y-2">
 
         <p className="text-xs uppercase text-muted-foreground mb-2">
-          Settings
-        </p>
+  Settings
+</p>
+{/* ADD STORE */}
 
-        <button
-          onClick={() => {
-            toggleTheme();
-            setDrawerOpen(false);
-          }}
-          className="flex items-center gap-3 w-full px-3 py-2 rounded-lg hover:bg-secondary text-sm"
-        >
-          🌙 Toggle Theme
-        </button>
+{showAddStore ? (
+
+  <div className="space-y-2 px-3 py-2">
+
+    <Input
+      placeholder="Store name"
+      value={newStoreName}
+      onChange={(e) => setNewStoreName(e.target.value)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" && newStoreName.trim()) {
+          addStore(newStoreName.trim());
+          setNewStoreName("");
+          setShowAddStore(false);
+        }
+      }}
+      className="h-8 text-sm"
+    />
+
+    <div className="flex gap-2">
+
+      <Button
+        size="sm"
+        className="flex-1 h-7 text-xs"
+        onClick={() => {
+          if (!newStoreName.trim()) return;
+          addStore(newStoreName.trim());
+          setNewStoreName("");
+          setShowAddStore(false);
+        }}
+      >
+        Add Store
+      </Button>
+
+      <Button
+        size="sm"
+        variant="ghost"
+        className="h-7 text-xs"
+        onClick={() => {
+          setShowAddStore(false);
+          setNewStoreName("");
+        }}
+      >
+        Cancel
+      </Button>
+
+    </div>
+
+  </div>
+
+) : (
+
+  <button
+    onClick={() => setShowAddStore(true)}
+    className="flex items-center gap-3 w-full px-3 py-2 rounded-lg hover:bg-secondary text-sm"
+  >
+    🏪 Add Store
+  </button>
+
+)}
+<button
+  onClick={() => {
+    toggleTheme();
+    setDrawerOpen(false);
+  }}
+  className="flex items-center gap-3 w-full px-3 py-2 rounded-lg hover:bg-secondary text-sm"
+>
+  🌙 Toggle Theme
+</button>
+
+<button
+  onClick={() => setSortByAisle(!sortByAisle)}
+  className="flex items-center justify-between w-full px-3 py-2 rounded-lg hover:bg-secondary text-sm"
+>
+  <span>🛒 Sort by aisle</span>
+  <span>{sortByAisle ? "✓" : ""}</span>
+</button>
+
 
         <div className="flex items-center gap-3 px-3 py-2 text-sm text-muted-foreground">
           🟢 {onlineCount} users online

@@ -1,172 +1,325 @@
-import { useState } from "react";
-import { Package, MoreVertical, Pencil, Trash2, Loader2, Check, Plus, Store } from "lucide-react";
-import type { Item } from "@shared/schema";
-import { useUpdateItem, useDeleteItem } from "@/hooks/use-items";
-import { useStoreContext } from "@/context/store-context";
-import { useStores, useStoreList, useAddToStoreList, useRemoveFromStoreList } from "@/hooks/use-stores";
-import { cn } from "@/lib/utils";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Trash2, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { ItemDialog } from "./item-dialog";
+import { useItems } from "@/context/items-context";
+import { useStoreContext } from "@/context/store-context";
+import { useState, useRef } from "react";
 
-interface ItemCardProps {
-  item: Item;
-}
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter
+} from "@/components/ui/dialog";
 
-export function ItemCard({ item }: ItemCardProps) {
-  const deleteMutation = useDeleteItem();
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-  const [imageError, setImageError] = useState(false);
+import { Input } from "@/components/ui/input";
 
-  const { selectedStoreId } = useStoreContext();
-  const { data: stores } = useStores();
+const categoryLabels: Record<string, string> = {
+  produce: "🥦 Produce",
+  bakery: "🍞 Bakery",
+  meat: "🥩 Meat",
+  dairy: "🥛 Dairy",
+  chilled: "🧊 Chilled",
+  frozen: "❄ Frozen",
+  pantry: "🥫 Pantry",
+  household: "🧴 Household",
+  other: "📦 Other"
+};
 
-  const effectiveStoreId = item.defaultStoreId ?? selectedStoreId;
-  const { data: storeList } = useStoreList(effectiveStoreId);
+const categoryIcons: Record<string, string> = {
+  produce: "🥦",
+  bakery: "🍞",
+  meat: "🥩",
+  dairy: "🥛",
+  chilled: "🧊",
+  frozen: "❄️",
+  pantry: "🥫",
+  household: "🧴",
+  other: "📦"
+};
 
-  const listItemId = storeList?.find(li => li.itemId === item.id)?.id ?? null;
-  const isOnList = listItemId != null;
+type Item = {
+  id: number;
+  name: string;
+  category?: string;
+  imageUrl?: string;
+  preferredStoreId?: number;
+};
 
-  const effectiveStore = stores?.find(s => s.id === effectiveStoreId);
+export function ItemCard({ item }: { item: Item }) {
+  const { deleteItem, updateItem } = useItems();
 
-  const addToListMutation = useAddToStoreList(effectiveStoreId);
-  const removeFromListMutation = useRemoveFromStoreList(effectiveStoreId);
-  const isListPending = addToListMutation.isPending || removeFromListMutation.isPending;
+  const { selectedStoreId, addItemToStore, stores, storeLists } =
+    useStoreContext();
 
-  const handleToggleList = () => {
-    if (!effectiveStoreId) return;
-    if (isOnList) {
-      removeFromListMutation.mutate(listItemId);
-    } else {
-      addToListMutation.mutate({ itemId: item.id, quantity: item.quantity });
-    }
+  const [editingItem, setEditingItem] = useState<Item | null>(null);
+
+  const [editName, setEditName] = useState("");
+  const [editImage, setEditImage] = useState("");
+  const [editCategory, setEditCategory] = useState("");
+  const [editPreferredStore, setEditPreferredStore] =
+    useState<number | undefined>(undefined);
+
+  const nameInputRef = useRef<HTMLInputElement>(null);
+
+  function openEditDialog(item: Item) {
+    setEditingItem(item);
+
+    setEditName(item.name);
+    setEditImage(item.imageUrl ?? "");
+    setEditCategory(item.category ?? "other");
+    setEditPreferredStore(item.preferredStoreId);
+
+    setTimeout(() => {
+      nameInputRef.current?.focus();
+    }, 50);
+  }
+
+  function handleSaveEdit() {
+    if (!editingItem) return;
+
+    updateItem(editingItem.id, {
+      name: editName,
+      category: editCategory,
+      imageUrl: editImage,
+      preferredStoreId: editPreferredStore
+    });
+
+    setEditingItem(null);
+  }
+
+  const targetStoreId = item.preferredStoreId ?? selectedStoreId;
+
+  const isAdded = targetStoreId
+    ? storeLists[targetStoreId]?.some(
+        (listItem) => listItem.item.id === item.id
+      )
+    : false;
+
+  const handleAddToStore = () => {
+    if (!targetStoreId || isAdded) return;
+    addItemToStore(targetStoreId, item);
   };
 
-  const buttonLabel = () => {
-    if (isListPending) return null;
-    if (isOnList) return "Added";
-    return "Add";
-  };
+  const preferredStore = stores.find(
+    (s) => s.id === item.preferredStoreId
+  );
 
   return (
-    <>
-      <div
-        className={cn(
-          "group relative bg-card rounded-2xl border border-border/40 overflow-hidden transition-all duration-300",
-          isOnList ? "shadow-md shadow-primary/5 border-primary/20" : "hover:border-border/80 hover:shadow-lg hover:shadow-black/5",
-          "flex flex-col flex-1"
+    <div
+      className={`bg-card border rounded-2xl p-4 flex flex-col gap-3 transition shadow-sm hover:shadow-md ${
+        isAdded ? "border-green-500/60 opacity-80" : ""
+      }`}
+    >
+      {/* IMAGE */}
+
+      <div className="w-full aspect-square rounded-xl overflow-hidden bg-secondary/30 flex items-center justify-center">
+        {item.imageUrl ? (
+          <img
+            src={item.imageUrl}
+            alt={item.name}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <span className="text-4xl">
+            {categoryIcons[item.category ?? "other"]}
+          </span>
         )}
-        data-testid={`item-card-${item.id}`}
-      >
-        <div className="absolute z-10 top-3 right-3 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity duration-200">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button size="icon" variant="secondary" className="w-8 h-8 rounded-full bg-background/80 backdrop-blur-sm shadow-sm hover:bg-background focus-ring" data-testid={`button-menu-${item.id}`}>
-                <MoreVertical className="w-4 h-4 text-foreground" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-40 p-2 rounded-xl shadow-xl border-border/50">
-              <DropdownMenuItem onClick={() => setIsEditDialogOpen(true)} className="rounded-lg cursor-pointer" data-testid={`menu-edit-${item.id}`}>
-                <Pencil className="w-4 h-4 mr-2" /> Edit
-              </DropdownMenuItem>
-              <DropdownMenuSeparator className="bg-border/50" />
-              <DropdownMenuItem
-                onClick={() => deleteMutation.mutate(item.id)}
-                className="text-destructive focus:bg-destructive/10 rounded-lg cursor-pointer"
-                disabled={deleteMutation.isPending}
-                data-testid={`menu-delete-${item.id}`}
-              >
-                {deleteMutation.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />}
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+      </div>
 
-        <div className="flex justify-center pt-3 pb-1 shrink-0">
-          <div className="w-12 h-12 rounded-lg bg-secondary/30 flex items-center justify-center overflow-hidden">
-            {item.imageUrl && !imageError ? (
-              <img
-                src={item.imageUrl}
-                alt={item.name}
-                onError={() => setImageError(true)}
-                className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-              />
-            ) : (
-              <Package className="w-4 h-4 text-muted-foreground/50" />
-            )}
-          </div>
-        </div>
+      {/* TEXT INFO */}
 
-        <div className="flex flex-col flex-1 p-3">
-          <div className="flex flex-col items-start gap-1 mb-1">
-            {item.category && (
-              <Badge variant="secondary" className="text-[10px] px-1.5 py-0" data-testid={`badge-category-${item.id}`}>
-                {item.category}
-              </Badge>
-            )}
-            {effectiveStore && (
-              <Badge variant="outline" className="text-[10px] px-1.5 py-0 text-primary/70 border-primary/20 bg-primary/5 gap-0.5" data-testid={`badge-store-${item.id}`}>
-                <Store className="w-2 h-2" />
-                {effectiveStore.name}
-              </Badge>
-            )}
-          </div>
+      <div className="space-y-1">
+        <p className="font-semibold text-base leading-tight">
+          {item.name}
+        </p>
 
-          <h3 className="font-bold text-foreground text-sm leading-tight mb-1 line-clamp-2" data-testid={`text-name-${item.id}`}>
-            {item.name}
-          </h3>
-          {item.notes && (
-            <p className="text-xs text-muted-foreground line-clamp-1 mb-2 flex-1">
-              {item.notes}
-            </p>
-          )}
+        {item.category && (
+          <p className="text-sm text-muted-foreground">
+            {categoryLabels[item.category] ?? "📦 Other"}
+          </p>
+        )}
 
-          <div className="mt-auto pt-2 border-t border-border/40">
-            {effectiveStoreId ? (
-              <Button
-                onClick={handleToggleList}
-                disabled={isListPending}
-                variant={isOnList ? "secondary" : "default"}
-                className={cn(
-                  "w-full rounded-lg text-xs font-medium h-7 px-2 transition-all duration-300",
-                  isOnList ? "bg-secondary text-secondary-foreground hover:bg-secondary/80" : "hover-lift"
-                )}
-                data-testid={`button-toggle-list-${item.id}`}
-              >
-                {isListPending ? (
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                ) : isOnList ? (
-                  <><Check className="w-3 h-3 mr-1" />{buttonLabel()}</>
-                ) : (
-                  <><Plus className="w-3 h-3 mr-1" />{buttonLabel()}</>
-                )}
-              </Button>
-            ) : (
-              <Button
-                asChild
-                variant="outline"
-                className="w-full rounded-lg text-xs font-medium h-7 px-2"
-              >
-                <a href="/">Select a store first</a>
-              </Button>
-            )}
-          </div>
+        <p className="text-xs text-muted-foreground">
+          {preferredStore
+            ? `Preferred: ${preferredStore.name}`
+            : selectedStoreId
+            ? `Will add to: ${
+                stores.find((s) => s.id === selectedStoreId)?.name
+              }`
+            : "No store selected"}
+        </p>
+      </div>
+
+      {/* ACTION BUTTONS */}
+
+      <div className="flex justify-between pt-2">
+        <Button
+          variant={isAdded ? "default" : "outline"}
+          size="sm"
+          onClick={handleAddToStore}
+          disabled={!targetStoreId || isAdded}
+          className={`flex items-center gap-1 ${
+            isAdded ? "bg-green-600 text-white" : ""
+          }`}
+        >
+          {isAdded ? "✓ Added" : "Add"}
+        </Button>
+
+        <div className="flex flex-col gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => openEditDialog(item)}
+            className="text-blue-500 hover:text-blue-600"
+          >
+            <Pencil className="w-4 h-4" />
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => deleteItem(item.id)}
+            className="text-red-500 hover:text-red-600"
+          >
+            <Trash2 className="w-4 h-4" />
+          </Button>
         </div>
       </div>
 
-      <ItemDialog
-        item={item}
-        open={isEditDialogOpen}
-        onOpenChange={setIsEditDialogOpen}
+      {/* EDIT DIALOG */}
+
+      <Dialog
+        open={editingItem !== null}
+        onOpenChange={() => setEditingItem(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Item</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-3">
+
+            <Input
+              ref={nameInputRef}
+              value={editName}
+              onChange={(e) => setEditName(e.target.value)}
+              placeholder="Item name"
+            />
+
+            <div className="space-y-3">
+
+  {/* Image Preview */}
+
+  {editImage && (
+    <div className="w-28 h-28 rounded-xl overflow-hidden border">
+      <img
+        src={editImage}
+        alt="Preview"
+        className="w-full h-full object-cover"
       />
-    </>
+    </div>
+  )}
+
+  {/* Hidden file input */}
+
+  <input
+    id="imageUpload"
+    type="file"
+    accept="image/*"
+    className="hidden"
+    onChange={(e) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+
+      reader.onloadend = () => {
+        setEditImage(reader.result as string);
+      };
+
+      reader.readAsDataURL(file);
+    }}
+  />
+
+  {/* Buttons */}
+
+  <div className="flex gap-2">
+
+    <Button
+      type="button"
+      variant="outline"
+      onClick={() => {
+        document.getElementById("imageUpload")?.click();
+      }}
+    >
+      Change Image
+    </Button>
+
+    {editImage && (
+      <Button
+        type="button"
+        variant="ghost"
+        onClick={() => setEditImage("")}
+      >
+        Remove
+      </Button>
+    )}
+
+  </div>
+
+</div>
+
+            <select
+              value={editCategory}
+              onChange={(e) => setEditCategory(e.target.value)}
+              className="w-full border border-input bg-background text-foreground rounded-md p-2"
+            >
+              {Object.entries(categoryLabels).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
+
+            {/* Preferred Store */}
+
+            <select
+              value={editPreferredStore ?? ""}
+              onChange={(e) =>
+                setEditPreferredStore(
+                  e.target.value ? Number(e.target.value) : undefined
+                )
+              }
+              className="w-full border border-input bg-background text-foreground rounded-md p-2"
+            >
+              <option value="">No preferred store</option>
+
+              {stores.map((store) => (
+                <option key={store.id} value={store.id}>
+                  {store.name}
+                </option>
+              ))}
+            </select>
+
+          </div>
+
+          <DialogFooter>
+
+            <Button
+              variant="outline"
+              onClick={() => setEditingItem(null)}
+            >
+              Cancel
+            </Button>
+
+            <Button onClick={handleSaveEdit}>
+              Save
+            </Button>
+
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }
