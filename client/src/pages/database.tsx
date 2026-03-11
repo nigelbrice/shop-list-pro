@@ -310,22 +310,17 @@ export default function Database() {
       {scannerOpen && (
 
         <BarcodeScanner
-          onScan={async (barcode) => {
+          onScan={(barcode) => {
+  if (!barcode) return
 
-            const product = await lookupBarcode(barcode);
+  console.log("Scanned barcode:", barcode)
 
-            if (product) {
+  setNewItemName(barcode)
 
-              setNewItemName(product.name);
-              setNewItemImage(product.image || "");
-
-              setDialogOpen(true);
-
-            }
-
-            setScannerOpen(false);
-
-          }}
+  setTimeout(() => {
+    setScannerOpen(false)
+  }, 200)
+}}
           onClose={() => setScannerOpen(false)}
         />
 
