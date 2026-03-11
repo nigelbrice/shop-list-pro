@@ -307,24 +307,26 @@ export default function Database() {
 
       {/* Barcode Scanner */}
 
-      {scannerOpen && (
+{scannerOpen && (
+  <BarcodeScanner
+    onScan={(barcode) => {
 
-        <BarcodeScanner
-          onScan={(barcode) => {
-  if (!barcode) return
+      if (!barcode) {
+        return;
+      }
 
-  console.log("Scanned barcode:", barcode)
+      console.log("Scanned barcode:", barcode);
 
-  setNewItemName(barcode)
+      setNewItemName(barcode);
 
-  setTimeout(() => {
-    setScannerOpen(false)
-  }, 200)
-}}
-          onClose={() => setScannerOpen(false)}
-        />
+      setTimeout(() => {
+        setScannerOpen(false);
+      }, 200);
 
-      )}
+    }}
+    onClose={() => setScannerOpen(false)}
+  />
+)}
 
     </div>
 
