@@ -111,7 +111,7 @@ export function ItemCard({ item }: { item: Item }) {
     isAdded ? "border-green-500/60 opacity-80" : ""
   }`}
 >
-    >
+    
       {/* IMAGE */}
 
       <div className="w-full aspect-square rounded-lg overflow-hidden bg-secondary/30 flex items-center justify-center">
