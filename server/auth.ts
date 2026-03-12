@@ -119,13 +119,13 @@ export function registerAuthRoutes(app: import("express").Express) {
 
   app.delete("/api/auth/users/:id", requireAuth, async (req, res) => {
     try {
-      const id = parseInt(req.params.id, 10);
+      const id = Number(req.params.id);
       if (isNaN(id)) return res.status(400).json({ message: "Invalid ID" });
       const accountId = req.session.accountId!;
       const count = await storage.getAccountUserCount(accountId);
       if (count <= 1) return res.status(400).json({ message: "Cannot remove the last member" });
       await storage.deleteAccountUser(id);
-      if (req.session.activeUserId === id) {
+      if (Number(req.session.activeUserId) === id) {
         const users = await storage.getAccountUsers(accountId);
         req.session.activeUserId = users[0]?.id ?? null;
       }
@@ -138,11 +138,13 @@ export function registerAuthRoutes(app: import("express").Express) {
   app.post("/api/auth/switch-user", requireAuth, async (req, res) => {
     try {
       const { userId } = req.body;
-      if (typeof userId !== "number") return res.status(400).json({ message: "userId is required" });
+      // IDs may come through as strings after bigint migration
+      const parsedUserId = Number(userId);
+      if (isNaN(parsedUserId)) return res.status(400).json({ message: "userId is required" });
       const users = await storage.getAccountUsers(req.session.accountId!);
-      const user = users.find(u => u.id === userId);
+      const user = users.find(u => Number(u.id) === parsedUserId);
       if (!user) return res.status(404).json({ message: "Member not found" });
-      req.session.activeUserId = userId;
+      req.session.activeUserId = parsedUserId;
       res.json(user);
     } catch {
       res.status(500).json({ message: "Failed to switch member" });

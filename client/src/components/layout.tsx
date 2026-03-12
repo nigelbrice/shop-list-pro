@@ -377,7 +377,7 @@ const [newStoreName, setNewStoreName] = useState("");
 
       {/* Footer */}
       <div className="text-xs text-muted-foreground">
-        Shopeeze v1.28
+        Shopeeze v1.29
       </div>
 
     </div>
