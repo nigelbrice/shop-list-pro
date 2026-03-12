@@ -4,23 +4,19 @@ import { supabase } from "./supabase";
 // TYPES
 // =============================================
 
-// Every pending operation we need to flush to
-// Supabase when the user comes back online.
 export type PendingOp = {
-  id: string;          // unique id for this operation
+  id: string;
   table: "items" | "stores" | "store_list_items";
   action: "upsert" | "delete";
-  payload: any;        // the row data (for upsert) or { id } (for delete)
+  payload: any;
   accountId: number;
-  timestamp: string;   // when the change was made locally
+  timestamp: string;
 };
 
 const QUEUE_KEY = "shopeeze_pending_ops";
 
 // =============================================
 // PENDING QUEUE HELPERS
-// The queue lives in localStorage so it
-// survives a page refresh or app close.
 // =============================================
 
 export function getQueue(): PendingOp[] {
@@ -36,12 +32,11 @@ function saveQueue(queue: PendingOp[]) {
   localStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
 }
 
-// Add a new operation to the queue
 export function enqueue(op: Omit<PendingOp, "id" | "timestamp">) {
   const queue = getQueue();
 
-  // If there's already a pending op for the same row + table,
-  // replace it — no point sending two updates for the same item.
+  // Replace any existing pending op for the same row
+  // so we don't send redundant updates
   const filtered = queue.filter(
     (existing) =>
       !(
@@ -57,17 +52,20 @@ export function enqueue(op: Omit<PendingOp, "id" | "timestamp">) {
   };
 
   saveQueue([...filtered, newOp]);
+
+  // Try to flush immediately if online
+  if (navigator.onLine) {
+    flushQueue().catch(() => {});
+  }
 }
 
-// Remove a successfully synced operation from the queue
 function dequeue(opId: string) {
   const queue = getQueue().filter((op) => op.id !== opId);
   saveQueue(queue);
 }
 
 // =============================================
-// PUSH — send local changes up to Supabase
-// Called on reconnect to flush the queue.
+// FLUSH QUEUE — push local changes to Supabase
 // =============================================
 
 export async function flushQueue(): Promise<void> {
@@ -89,17 +87,16 @@ export async function flushQueue(): Promise<void> {
         const { error } = await supabase
           .from(op.table)
           .delete()
-          .eq("id", op.payload.id);
+          .eq("id", op.payload.id)
+          .eq("account_id", op.accountId);
 
         if (error) throw error;
       }
 
-      // Success — remove from queue
       dequeue(op.id);
       console.log(`[sync] ✓ ${op.action} ${op.table} id=${op.payload?.id}`);
 
     } catch (err) {
-      // Leave it in the queue — will retry next reconnect
       console.warn(`[sync] ✗ Failed to sync ${op.table} id=${op.payload?.id}:`, err);
     }
   }
@@ -107,9 +104,6 @@ export async function flushQueue(): Promise<void> {
 
 // =============================================
 // PULL — fetch latest data from Supabase
-// Called on load and on reconnect so we pick
-// up any changes other users made while we
-// were offline.
 // =============================================
 
 export async function pullItems(accountId: number) {
@@ -153,12 +147,10 @@ export async function pullStoreListItems(accountId: number) {
 
 // =============================================
 // MERGE HELPER
-// Given a local array and a remote array,
-// return the merged result where the row with
-// the most recent updated_at wins.
-// Any rows only in remote get added locally.
-// Any rows only in local stay (they may be
-// pending an upload).
+// Merges local and remote arrays by id.
+// The row with the most recent updated_at wins.
+// Rows only in remote get added locally.
+// Rows only in local stay (may be pending sync).
 // =============================================
 
 export function mergeRows<T extends { id: number; updated_at?: string }>(
@@ -167,12 +159,10 @@ export function mergeRows<T extends { id: number; updated_at?: string }>(
 ): T[] {
   const merged = new Map<number, T>();
 
-  // Start with all local rows
   for (const row of local) {
     merged.set(row.id, row);
   }
 
-  // Layer in remote rows — remote wins if it's newer
   for (const row of remote) {
     const existing = merged.get(row.id);
 
@@ -184,10 +174,13 @@ export function mergeRows<T extends { id: number; updated_at?: string }>(
       const remoteTime = new Date(row.updated_at ?? 0).getTime();
 
       if (remoteTime > localTime) {
-        // Remote is newer — use it
-        merged.set(row.id, row);
+        // Remote is newer — use it but preserve
+        // local imageUrl since images aren't in Supabase
+        merged.set(row.id, {
+          ...row,
+          imageUrl: (existing as any).imageUrl ?? (row as any).imageUrl,
+        });
       }
-      // Otherwise keep local (it's newer or the same)
     }
   }
 
