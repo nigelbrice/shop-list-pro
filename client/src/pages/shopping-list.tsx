@@ -371,21 +371,37 @@ export default function ShoppingList(){
 
     <div className="flex gap-2 mb-4 overflow-x-auto">
 
-      {stores.map((store)=>(
+      {stores.map((store) => {
 
-        <button
-          key={store.id}
-          onClick={()=>setSelectedStoreId(store.id)}
-          className={`px-3 py-2 rounded-lg border ${
-            selectedStoreId===store.id
-              ? "bg-primary text-white"
-              : "bg-secondary"
-          }`}
-        >
-          {store.name}
-        </button>
+        const itemCount = (storeLists[store.id] || []).length;
 
-      ))}
+        return (
+          <button
+            key={store.id}
+            onClick={() => setSelectedStoreId(store.id)}
+            className={`relative px-3 py-2 rounded-lg border flex items-center gap-2 ${
+              selectedStoreId === store.id
+                ? "bg-primary text-white"
+                : "bg-secondary"
+            }`}
+          >
+            {store.name}
+
+            {itemCount > 0 && (
+              <span
+                className={`inline-flex items-center justify-center text-xs font-bold rounded-full w-5 h-5 ${
+                  selectedStoreId === store.id
+                    ? "bg-white text-primary"
+                    : "bg-primary text-white"
+                }`}
+              >
+                {itemCount}
+              </span>
+            )}
+          </button>
+        );
+
+      })}
 
     </div>
 

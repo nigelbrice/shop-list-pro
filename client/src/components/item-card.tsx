@@ -49,17 +49,14 @@ type Item = {
 export function ItemCard({ item }: { item: Item }) {
   const { deleteItem, updateItem } = useItems();
 
-  // FIX 4: Pull in syncItemDetails so we can keep store lists up to date
-  const { selectedStoreId, addItemToStore, stores, storeLists, syncItemDetails } =
+  const { selectedStoreId, addItemToStore, removeItemFromStore, stores, storeLists, syncItemDetails } =
     useStoreContext();
 
   const [editingItem, setEditingItem] = useState<Item | null>(null);
-
   const [editName, setEditName] = useState("");
   const [editImage, setEditImage] = useState("");
   const [editCategory, setEditCategory] = useState("");
-  const [editPreferredStore, setEditPreferredStore] =
-    useState<number | undefined>(undefined);
+  const [editPreferredStore, setEditPreferredStore] = useState<number | undefined>(undefined);
 
   const nameInputRef = useRef<HTMLInputElement>(null);
 
@@ -69,59 +66,57 @@ export function ItemCard({ item }: { item: Item }) {
     setEditImage(item.imageUrl ?? "");
     setEditCategory(item.category ?? "other");
     setEditPreferredStore(item.preferredStoreId);
-
-    setTimeout(() => {
-      nameInputRef.current?.focus();
-    }, 50);
+    setTimeout(() => nameInputRef.current?.focus(), 50);
   }
 
   function handleSaveEdit() {
     if (!editingItem) return;
-
     const updates = {
       name: editName,
       category: editCategory,
       imageUrl: editImage,
       preferredStoreId: editPreferredStore
     };
-
-    // Update the item in the database
     updateItem(editingItem.id, updates);
-
-    // FIX 4: Also update the snapshot stored inside every store list
     syncItemDetails(editingItem.id, {
       name: editName,
       imageUrl: editImage,
       category: editCategory
     });
-
     setEditingItem(null);
   }
 
   const targetStoreId = item.preferredStoreId ?? selectedStoreId;
 
-  const isAdded = targetStoreId
-    ? storeLists[targetStoreId]?.some(
-        (listItem) => listItem.item.id === item.id
-      )
-    : false;
+  // Find the list entry for this item so we can remove it by listItemId
+  const listEntry = targetStoreId
+    ? storeLists[targetStoreId]?.find(li => li.item.id === item.id)
+    : undefined;
 
-  const handleAddToStore = () => {
-    if (!targetStoreId || isAdded) return;
-    addItemToStore(targetStoreId, item);
+  const isAdded = !!listEntry;
+
+  // CHANGE 3: toggle — adds if not present, removes if already added
+  const handleToggleStore = () => {
+    if (!targetStoreId) return;
+    if (isAdded && listEntry) {
+      removeItemFromStore(targetStoreId, listEntry.id);
+    } else {
+      addItemToStore(targetStoreId, item);
+    }
   };
 
   const preferredStore = stores.find((s) => s.id === item.preferredStoreId);
 
   return (
+    // CHANGE 1: compact card sizing for mobile
     <div
-      className={`bg-card border rounded-xl p-2 sm:p-4 flex flex-col gap-2 sm:gap-3 transition shadow-sm hover:shadow-md ${
-        isAdded ? "border-green-500/60 opacity-80" : ""
+      className={`bg-card border rounded-xl p-1.5 flex flex-col gap-1.5 transition shadow-sm hover:shadow-md ${
+        isAdded ? "border-green-500/60" : ""
       }`}
     >
 
-      {/* IMAGE */}
-      <div className="w-full aspect-square rounded-lg overflow-hidden bg-secondary/30 flex items-center justify-center">
+      {/* IMAGE — aspect-[4/3] is shorter than square */}
+      <div className="w-full aspect-[4/3] rounded-lg overflow-hidden bg-secondary/30 flex items-center justify-center">
         {item.imageUrl ? (
           <img
             src={item.imageUrl}
@@ -129,62 +124,64 @@ export function ItemCard({ item }: { item: Item }) {
             className="w-full h-full object-cover"
           />
         ) : (
-          <span className="text-4xl">
+          <span className="text-2xl">
             {categoryIcons[item.category ?? "other"]}
           </span>
         )}
       </div>
 
-      {/* TEXT INFO */}
-      <div className="space-y-1">
-        <p className="font-semibold text-sm sm:text-base leading-tight">
+      {/* TEXT */}
+      <div className="space-y-0.5">
+        <p className="font-semibold text-xs leading-tight line-clamp-2">
           {item.name}
         </p>
-
         {item.category && (
-          <p className="text-sm text-muted-foreground">
+          <p className="text-xs text-muted-foreground">
             {categoryLabels[item.category] ?? "📦 Other"}
           </p>
         )}
-
-        <p className="text-xs sm:text-sm text-muted-foreground">
+        <p className="text-xs text-muted-foreground truncate">
           {preferredStore
-            ? `Preferred: ${preferredStore.name}`
+            ? `📍 ${preferredStore.name}`
             : selectedStoreId
-            ? `Will add to: ${stores.find((s) => s.id === selectedStoreId)?.name}`
-            : "No store selected"}
+            ? `→ ${stores.find((s) => s.id === selectedStoreId)?.name}`
+            : "No store"}
         </p>
       </div>
 
-      {/* ACTION BUTTONS */}
-      <div className="flex justify-between pt-1">
-        <Button
-          variant={isAdded ? "default" : "outline"}
-          size="sm"
-          onClick={handleAddToStore}
-          disabled={!targetStoreId || isAdded}
-          className={`flex items-center gap-1 ${isAdded ? "bg-green-600 text-white" : ""}`}
+      {/* ACTIONS */}
+      <div className="flex items-center justify-between pt-0.5">
+
+        {/* CHANGE 3: toggle button — "Add" or "Remove" */}
+        <button
+          onClick={handleToggleStore}
+          disabled={!targetStoreId}
+          className={`text-xs px-2 py-1 rounded-lg border font-medium transition ${
+            isAdded
+              ? "bg-green-600 text-white border-green-600 hover:bg-red-500 hover:border-red-500"
+              : "bg-background hover:bg-secondary"
+          } disabled:opacity-40`}
         >
           {isAdded ? "✓ Added" : "Add"}
-        </Button>
+        </button>
 
-        <div className="flex flex-col gap-2">
+        <div className="flex gap-1">
           <Button
             variant="ghost"
             size="icon"
             onClick={() => openEditDialog(item)}
-            className="text-blue-500 hover:text-blue-600"
+            className="text-blue-500 hover:text-blue-600 h-7 w-7"
           >
-            <Pencil className="w-4 h-4" />
+            <Pencil className="w-3 h-3" />
           </Button>
 
           <Button
             variant="ghost"
             size="icon"
             onClick={() => deleteItem(item.id)}
-            className="text-red-500 hover:text-red-600"
+            className="text-red-500 hover:text-red-600 h-7 w-7"
           >
-            <Trash2 className="w-4 h-4" />
+            <Trash2 className="w-3 h-3" />
           </Button>
         </div>
       </div>
@@ -206,19 +203,12 @@ export function ItemCard({ item }: { item: Item }) {
             />
 
             <div className="space-y-3">
-
-              {/* Image Preview */}
               {editImage && (
                 <div className="w-28 h-28 rounded-xl overflow-hidden border">
-                  <img
-                    src={editImage}
-                    alt="Preview"
-                    className="w-full h-full object-cover"
-                  />
+                  <img src={editImage} alt="Preview" className="w-full h-full object-cover" />
                 </div>
               )}
 
-              {/* Hidden file input */}
               <input
                 id="imageUpload"
                 type="file"
@@ -253,25 +243,15 @@ export function ItemCard({ item }: { item: Item }) {
               />
 
               <div className="flex gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => document.getElementById("imageUpload")?.click()}
-                >
+                <Button type="button" variant="outline" onClick={() => document.getElementById("imageUpload")?.click()}>
                   Change Image
                 </Button>
-
                 {editImage && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    onClick={() => setEditImage("")}
-                  >
+                  <Button type="button" variant="ghost" onClick={() => setEditImage("")}>
                     Remove
                   </Button>
                 )}
               </div>
-
             </div>
 
             <select
@@ -284,30 +264,21 @@ export function ItemCard({ item }: { item: Item }) {
               ))}
             </select>
 
-            {/* Preferred Store */}
             <select
               value={editPreferredStore ?? ""}
-              onChange={(e) =>
-                setEditPreferredStore(
-                  e.target.value ? Number(e.target.value) : undefined
-                )
-              }
+              onChange={(e) => setEditPreferredStore(e.target.value ? Number(e.target.value) : undefined)}
               className="w-full border border-input bg-background text-foreground rounded-md p-2"
             >
               <option value="">No preferred store</option>
               {stores.map((store) => (
-                <option key={store.id} value={store.id}>
-                  {store.name}
-                </option>
+                <option key={store.id} value={store.id}>{store.name}</option>
               ))}
             </select>
 
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setEditingItem(null)}>
-              Cancel
-            </Button>
+            <Button variant="outline" onClick={() => setEditingItem(null)}>Cancel</Button>
             <Button onClick={handleSaveEdit}>Save</Button>
           </DialogFooter>
         </DialogContent>

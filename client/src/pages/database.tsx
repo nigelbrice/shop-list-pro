@@ -230,7 +230,7 @@ export default function Database() {
       {/* Item Grid */}
       {filteredAndSortedItems.length > 0 ? (
         <div className="max-w-6xl mx-auto px-4">
-          <div className="grid gap-3 grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+          <div className="grid gap-2 grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
             {filteredAndSortedItems.map((item: any) => (
               <ItemCard key={item.id} item={item} />
             ))}
@@ -271,9 +271,12 @@ export default function Database() {
         defaultImage={newItemImage}
       />
 
-      {/* Barcode Scanner */}
+      {/* Barcode Scanner — only mounted when open. The scanner component
+          handles its own safe shutdown before calling onClose/onScan,
+          so React never unmounts it while the camera is still running. */}
       {scannerOpen && (
         <BarcodeScanner
+          key="barcode-scanner"
           onScan={handleBarcodeScan}
           onClose={() => setScannerOpen(false)}
         />
