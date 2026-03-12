@@ -15,27 +15,27 @@ import {
 import { Input } from "@/components/ui/input";
 
 const categoryLabels: Record<string, string> = {
-  produce: "🥦 Produce",
-  bakery: "🍞 Bakery",
-  meat: "🥩 Meat",
-  dairy: "🥛 Dairy",
-  chilled: "🧊 Chilled",
-  frozen: "❄ Frozen",
-  pantry: "🥫 Pantry",
+  produce:   "🥦 Produce",
+  bakery:    "🍞 Bakery",
+  meat:      "🥩 Meat",
+  dairy:     "🥛 Dairy",
+  chilled:   "🧊 Chilled",
+  frozen:    "❄ Frozen",
+  pantry:    "🥫 Pantry",
   household: "🧴 Household",
-  other: "📦 Other"
+  other:     "📦 Other"
 };
 
 const categoryIcons: Record<string, string> = {
-  produce: "🥦",
-  bakery: "🍞",
-  meat: "🥩",
-  dairy: "🥛",
-  chilled: "🧊",
-  frozen: "❄️",
-  pantry: "🥫",
+  produce:   "🥦",
+  bakery:    "🍞",
+  meat:      "🥩",
+  dairy:     "🥛",
+  chilled:   "🧊",
+  frozen:    "❄️",
+  pantry:    "🥫",
   household: "🧴",
-  other: "📦"
+  other:     "📦"
 };
 
 type Item = {
@@ -49,7 +49,8 @@ type Item = {
 export function ItemCard({ item }: { item: Item }) {
   const { deleteItem, updateItem } = useItems();
 
-  const { selectedStoreId, addItemToStore, stores, storeLists } =
+  // FIX 4: Pull in syncItemDetails so we can keep store lists up to date
+  const { selectedStoreId, addItemToStore, stores, storeLists, syncItemDetails } =
     useStoreContext();
 
   const [editingItem, setEditingItem] = useState<Item | null>(null);
@@ -64,7 +65,6 @@ export function ItemCard({ item }: { item: Item }) {
 
   function openEditDialog(item: Item) {
     setEditingItem(item);
-
     setEditName(item.name);
     setEditImage(item.imageUrl ?? "");
     setEditCategory(item.category ?? "other");
@@ -78,11 +78,21 @@ export function ItemCard({ item }: { item: Item }) {
   function handleSaveEdit() {
     if (!editingItem) return;
 
-    updateItem(editingItem.id, {
+    const updates = {
       name: editName,
       category: editCategory,
       imageUrl: editImage,
       preferredStoreId: editPreferredStore
+    };
+
+    // Update the item in the database
+    updateItem(editingItem.id, updates);
+
+    // FIX 4: Also update the snapshot stored inside every store list
+    syncItemDetails(editingItem.id, {
+      name: editName,
+      imageUrl: editImage,
+      category: editCategory
     });
 
     setEditingItem(null);
@@ -101,19 +111,16 @@ export function ItemCard({ item }: { item: Item }) {
     addItemToStore(targetStoreId, item);
   };
 
-  const preferredStore = stores.find(
-    (s) => s.id === item.preferredStoreId
-  );
+  const preferredStore = stores.find((s) => s.id === item.preferredStoreId);
 
   return (
     <div
-  className={`bg-card border rounded-xl p-2 sm:p-4 flex flex-col gap-2 sm:gap-3 transition shadow-sm hover:shadow-md ${
-    isAdded ? "border-green-500/60 opacity-80" : ""
-  }`}
->
-    
-      {/* IMAGE */}
+      className={`bg-card border rounded-xl p-2 sm:p-4 flex flex-col gap-2 sm:gap-3 transition shadow-sm hover:shadow-md ${
+        isAdded ? "border-green-500/60 opacity-80" : ""
+      }`}
+    >
 
+      {/* IMAGE */}
       <div className="w-full aspect-square rounded-lg overflow-hidden bg-secondary/30 flex items-center justify-center">
         {item.imageUrl ? (
           <img
@@ -129,7 +136,6 @@ export function ItemCard({ item }: { item: Item }) {
       </div>
 
       {/* TEXT INFO */}
-
       <div className="space-y-1">
         <p className="font-semibold text-sm sm:text-base leading-tight">
           {item.name}
@@ -145,24 +151,19 @@ export function ItemCard({ item }: { item: Item }) {
           {preferredStore
             ? `Preferred: ${preferredStore.name}`
             : selectedStoreId
-            ? `Will add to: ${
-                stores.find((s) => s.id === selectedStoreId)?.name
-              }`
+            ? `Will add to: ${stores.find((s) => s.id === selectedStoreId)?.name}`
             : "No store selected"}
         </p>
       </div>
 
       {/* ACTION BUTTONS */}
-
       <div className="flex justify-between pt-1">
         <Button
           variant={isAdded ? "default" : "outline"}
           size="sm"
           onClick={handleAddToStore}
           disabled={!targetStoreId || isAdded}
-          className={`flex items-center gap-1 ${
-            isAdded ? "bg-green-600 text-white" : ""
-          }`}
+          className={`flex items-center gap-1 ${isAdded ? "bg-green-600 text-white" : ""}`}
         >
           {isAdded ? "✓ Added" : "Add"}
         </Button>
@@ -189,11 +190,7 @@ export function ItemCard({ item }: { item: Item }) {
       </div>
 
       {/* EDIT DIALOG */}
-
-      <Dialog
-        open={editingItem !== null}
-        onOpenChange={() => setEditingItem(null)}
-      >
+      <Dialog open={editingItem !== null} onOpenChange={() => setEditingItem(null)}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit Item</DialogTitle>
@@ -210,66 +207,55 @@ export function ItemCard({ item }: { item: Item }) {
 
             <div className="space-y-3">
 
-  {/* Image Preview */}
+              {/* Image Preview */}
+              {editImage && (
+                <div className="w-28 h-28 rounded-xl overflow-hidden border">
+                  <img
+                    src={editImage}
+                    alt="Preview"
+                    className="w-full h-full object-cover"
+                  />
+                </div>
+              )}
 
-  {editImage && (
-    <div className="w-28 h-28 rounded-xl overflow-hidden border">
-      <img
-        src={editImage}
-        alt="Preview"
-        className="w-full h-full object-cover"
-      />
-    </div>
-  )}
+              {/* Hidden file input */}
+              <input
+                id="imageUpload"
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  const reader = new FileReader();
+                  reader.onloadend = () => {
+                    setEditImage(reader.result as string);
+                  };
+                  reader.readAsDataURL(file);
+                }}
+              />
 
-  {/* Hidden file input */}
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => document.getElementById("imageUpload")?.click()}
+                >
+                  Change Image
+                </Button>
 
-  <input
-    id="imageUpload"
-    type="file"
-    accept="image/*"
-    className="hidden"
-    onChange={(e) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
+                {editImage && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => setEditImage("")}
+                  >
+                    Remove
+                  </Button>
+                )}
+              </div>
 
-      const reader = new FileReader();
-
-      reader.onloadend = () => {
-        setEditImage(reader.result as string);
-      };
-
-      reader.readAsDataURL(file);
-    }}
-  />
-
-  {/* Buttons */}
-
-  <div className="flex gap-2">
-
-    <Button
-      type="button"
-      variant="outline"
-      onClick={() => {
-        document.getElementById("imageUpload")?.click();
-      }}
-    >
-      Change Image
-    </Button>
-
-    {editImage && (
-      <Button
-        type="button"
-        variant="ghost"
-        onClick={() => setEditImage("")}
-      >
-        Remove
-      </Button>
-    )}
-
-  </div>
-
-</div>
+            </div>
 
             <select
               value={editCategory}
@@ -277,14 +263,11 @@ export function ItemCard({ item }: { item: Item }) {
               className="w-full border border-input bg-background text-foreground rounded-md p-2"
             >
               {Object.entries(categoryLabels).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
+                <option key={value} value={value}>{label}</option>
               ))}
             </select>
 
             {/* Preferred Store */}
-
             <select
               value={editPreferredStore ?? ""}
               onChange={(e) =>
@@ -295,7 +278,6 @@ export function ItemCard({ item }: { item: Item }) {
               className="w-full border border-input bg-background text-foreground rounded-md p-2"
             >
               <option value="">No preferred store</option>
-
               {stores.map((store) => (
                 <option key={store.id} value={store.id}>
                   {store.name}
@@ -306,21 +288,14 @@ export function ItemCard({ item }: { item: Item }) {
           </div>
 
           <DialogFooter>
-
-            <Button
-              variant="outline"
-              onClick={() => setEditingItem(null)}
-            >
+            <Button variant="outline" onClick={() => setEditingItem(null)}>
               Cancel
             </Button>
-
-            <Button onClick={handleSaveEdit}>
-              Save
-            </Button>
-
+            <Button onClick={handleSaveEdit}>Save</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
     </div>
   );
 }
