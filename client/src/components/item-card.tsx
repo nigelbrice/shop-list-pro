@@ -131,7 +131,7 @@ export function ItemCard({ item }: { item: Item }) {
       </div>
 
       {/* TEXT */}
-      <div className="space-y-0.5">
+      <div className="space-y-0.5 flex-1">
         <p className="font-semibold text-xs leading-tight line-clamp-2">
           {item.name}
         </p>

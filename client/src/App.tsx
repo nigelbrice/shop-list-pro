@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
-
+import { PwaUpdater } from "@/components/pwa-update";
 import { ItemsProvider } from "@/context/items-context";
 import { StoreProvider } from "@/context/store-context";
 
@@ -85,7 +85,7 @@ export default function App() {
               <NetworkStatus />
 
               <Toaster />
-
+              <PwaUpdater />
               <AppInner />
 
             </StoreProvider>

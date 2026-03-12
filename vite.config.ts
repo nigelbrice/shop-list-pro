@@ -12,54 +12,58 @@ export default defineConfig({
     react(),
 
     VitePWA({
-  strategies: "generateSW",
-  registerType: "autoUpdate",
+      strategies: "generateSW",
+      registerType: "autoUpdate",
 
-  includeAssets: ["icon-192.png", "icon-512.png"],
+      includeAssets: ["icon-192.png", "icon-512.png"],
 
-  manifest: {
-    name: "Shopeeze",
-    short_name: "Shopeeze",
-    theme_color: "#ffffff",
-    icons: [
-      {
-        src: "/icon-192.png",
-        sizes: "192x192",
-        type: "image/png"
+      manifest: {
+        name: "Shopeeze",
+        short_name: "Shopeeze",
+        theme_color: "#ffffff",
+        icons: [
+          {
+            src: "/icon-192.png",
+            sizes: "192x192",
+            type: "image/png"
+          },
+          {
+            src: "/icon-512.png",
+            sizes: "512x512",
+            type: "image/png"
+          }
+        ]
       },
-      {
-        src: "/icon-512.png",
-        sizes: "512x512",
-        type: "image/png"
-      }
-    ]
-  },
 
-     workbox: {
-  navigateFallback: "/index.html",
-  globPatterns: ["**/*.{js,css,html,ico,png,svg,webmanifest}"],
+      workbox: {
+        // Take over immediately without waiting for tabs to close
+        skipWaiting: true,
+        clientsClaim: true,
 
-  runtimeCaching: [
-  {
-    urlPattern: /\/api\//,
-    handler: "NetworkFirst",
-    options: {
-      cacheName: "api-cache",
-      networkTimeoutSeconds: 3,
-      expiration: {
-        maxEntries: 50,
-        maxAgeSeconds: 24 * 60 * 60
-      },
-      backgroundSync: {
-        name: "apiQueue",
-        options: {
-          maxRetentionTime: 24 * 60
-        }
+        navigateFallback: "/index.html",
+        globPatterns: ["**/*.{js,css,html,ico,png,svg,webmanifest}"],
+
+        runtimeCaching: [
+          {
+            urlPattern: /\/api\//,
+            handler: "NetworkFirst",
+            options: {
+              cacheName: "api-cache",
+              networkTimeoutSeconds: 3,
+              expiration: {
+                maxEntries: 50,
+                maxAgeSeconds: 24 * 60 * 60
+              },
+              backgroundSync: {
+                name: "apiQueue",
+                options: {
+                  maxRetentionTime: 24 * 60
+                }
+              }
+            }
+          }
+        ]
       }
-    }
-  }
-]
-}
     })
   ],
 
