@@ -1,20 +1,24 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { enqueue } from "@/lib/supabase-sync";
 
+// =============================================
+// TYPES
+// =============================================
 
-/* ------------------------------------------------ */
-/* TYPES                                            */
-/* ------------------------------------------------ */
-
-type Store = {
+export type Store = {
   id: number;
   name: string;
   itemCount: number;
+  account_id?: number;
+  updated_at?: string;
 };
 
-type StoreListItem = {
+export type StoreListItem = {
   id: number;
   quantity: number;
   completed: boolean;
+  updated_at?: string;
+  account_id?: number;
   item: {
     id: number;
     name: string;
@@ -36,39 +40,33 @@ type StoreContextType = {
   sortByAisle: boolean;
   setSortByAisle: (value: boolean) => void;
 
+  accountId: number | null;
+  setAccountId: (id: number) => void;
+
   addStore: (name: string) => number;
   deleteStore: (id: number) => void;
 
   addItemToStore: (storeId: number, item: any) => void;
   removeItemFromStore: (storeId: number, listItemId: number) => void;
-
   updateItemQuantity: (storeId: number, listItemId: number, quantity: number) => void;
   toggleItemCompleted: (storeId: number, listItemId: number) => void;
-
   syncItemDetails: (itemId: number, updates: { name?: string; imageUrl?: string; category?: string }) => void;
+
+  // Called by useSync after pulling from Supabase
+  setStores: (stores: Store[]) => void;
+  setStoreListItems: (items: StoreListItem[]) => void;
 };
 
 const StoreContext = createContext<StoreContextType | null>(null);
 
-/* ------------------------------------------------ */
-/* AISLE ORDER                                      */
-/* ------------------------------------------------ */
+// =============================================
+// AISLE ORDER + CATEGORY OPTIONS
+// =============================================
 
 export const aisleOrder: string[] = [
-  "produce",
-  "bakery",
-  "meat",
-  "dairy",
-  "chilled",
-  "frozen",
-  "pantry",
-  "household",
-  "other"
+  "produce", "bakery", "meat", "dairy",
+  "chilled", "frozen", "pantry", "household", "other"
 ];
-
-/* ------------------------------------------------ */
-/* CATEGORY OPTIONS                                 */
-/* ------------------------------------------------ */
 
 export const categoryOptions = [
   { value: "produce",   label: "🥦 Produce" },
@@ -79,28 +77,24 @@ export const categoryOptions = [
   { value: "frozen",    label: "❄ Frozen" },
   { value: "pantry",    label: "🥫 Pantry" },
   { value: "household", label: "🧴 Household" },
-  { value: "other",     label: "📦 Other" }
+  { value: "other",     label: "📦 Other" },
 ];
-
-/* ------------------------------------------------ */
-/* DEFAULT STORES — only used if nothing is saved   */
-/* ------------------------------------------------ */
 
 const DEFAULT_STORES: Store[] = [
   { id: 1, name: "Tesco", itemCount: 0 },
   { id: 2, name: "Aldi",  itemCount: 0 },
-  { id: 3, name: "Asda",  itemCount: 0 }
+  { id: 3, name: "Asda",  itemCount: 0 },
 ];
 
-/* ------------------------------------------------ */
-/* PROVIDER                                         */
-/* ------------------------------------------------ */
+// =============================================
+// PROVIDER
+// =============================================
 
 export function StoreProvider({ children }: { children: React.ReactNode }) {
 
-  // FIX 2: Load stores from localStorage so they survive a page refresh.
-  // Falls back to DEFAULT_STORES only on first ever visit.
-  const [stores, setStores] = useState<Store[]>(() => {
+  const [accountId, setAccountId] = useState<number | null>(null);
+
+  const [stores, setStoresState] = useState<Store[]>(() => {
     try {
       const saved = localStorage.getItem("shopeeze_stores");
       return saved ? JSON.parse(saved) : DEFAULT_STORES;
@@ -109,7 +103,6 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }
   });
 
-  // FIX 2: Also persist selectedStoreId across refreshes.
   const [selectedStoreId, setSelectedStoreId] = useState<number | null>(() => {
     try {
       const saved = localStorage.getItem("shopeeze_selected_store");
@@ -124,7 +117,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     return saved ? JSON.parse(saved) : false;
   });
 
-  const [storeLists, setStoreLists] = useState<StoreLists>(() => {
+  const [storeLists, setStoreListsState] = useState<StoreLists>(() => {
     try {
       const saved = localStorage.getItem("shopeeze_store_lists");
       return saved ? JSON.parse(saved) : {};
@@ -133,12 +126,14 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     }
   });
 
-  // FIX 2: Save stores whenever they change.
+  // -----------------------------------------------
+  // PERSIST to localStorage
+  // -----------------------------------------------
+
   useEffect(() => {
     localStorage.setItem("shopeeze_stores", JSON.stringify(stores));
   }, [stores]);
 
-  // FIX 2: Save selected store whenever it changes.
   useEffect(() => {
     localStorage.setItem("shopeeze_selected_store", JSON.stringify(selectedStoreId));
   }, [selectedStoreId]);
@@ -147,7 +142,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     try {
       localStorage.setItem("shopeeze_store_lists", JSON.stringify(storeLists));
     } catch (err) {
-      console.warn("Could not save store lists to localStorage (storage full?):", err);
+      console.warn("Could not save store lists (storage full?):", err);
     }
   }, [storeLists]);
 
@@ -155,107 +150,297 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem("shopeeze_sort_aisle", JSON.stringify(sortByAisle));
   }, [sortByAisle]);
 
+  // -----------------------------------------------
+  // setStores — called by useSync after a pull.
+  // Merges remote stores into local state.
+  // -----------------------------------------------
+  const setStores = useCallback((incoming: Store[]) => {
+    setStoresState(incoming);
+  }, []);
 
-  /* ---------------- STORE ACTIONS ---------------- */
+  // -----------------------------------------------
+  // setStoreListItems — called by useSync after a pull.
+  // Supabase stores list items as flat rows, but
+  // locally we group them by storeId. This converts
+  // the flat array back into the grouped shape.
+  // -----------------------------------------------
+  const setStoreListItems = useCallback((incoming: StoreListItem[]) => {
+    setStoreListsState((prev) => {
+      const next: StoreLists = { ...prev };
 
-  function addStore(name: string) {
-    const newStore: Store = { id: Date.now(), name, itemCount: 0 };
-    setStores(prev => [...prev, newStore]);
+      // Build a flat map of all existing list items
+      // so we can preserve the item snapshot (name,
+      // image etc.) which isn't stored in Supabase.
+      const existingMap = new Map<number, StoreListItem>();
+      for (const storeId in prev) {
+        for (const li of prev[storeId]) {
+          existingMap.set(li.id, li);
+        }
+      }
+
+      // Clear out old entries and regroup by store_id
+      const grouped: StoreLists = {};
+      for (const row of incoming) {
+        const storeId = (row as any).store_id;
+        if (!storeId) continue;
+
+        if (!grouped[storeId]) grouped[storeId] = [];
+
+        // Re-attach the item snapshot from local state
+        // if we have it (Supabase only stores item_id)
+        const existing = existingMap.get(row.id);
+        grouped[storeId].push({
+          ...row,
+          item: existing?.item ?? row.item ?? { id: (row as any).item_id, name: "Unknown" },
+        });
+      }
+
+      // Merge: keep any stores that weren't in the
+      // remote pull (e.g. stores with no list items yet)
+      for (const storeId in next) {
+        if (!grouped[storeId]) {
+          grouped[storeId] = next[storeId];
+        }
+      }
+
+      return grouped;
+    });
+  }, []);
+
+  // -----------------------------------------------
+  // ADD STORE
+  // -----------------------------------------------
+  const addStore = useCallback((name: string) => {
+    const now = new Date().toISOString();
+    const newStore: Store = {
+      id: Date.now(),
+      name,
+      itemCount: 0,
+      account_id: accountId ?? undefined,
+      updated_at: now,
+    };
+
+    setStoresState((prev) => [...prev, newStore]);
+
+    if (accountId) {
+      enqueue({
+        table: "stores",
+        action: "upsert",
+        accountId,
+        payload: {
+          id: newStore.id,
+          account_id: accountId,
+          name,
+          updated_at: now,
+        },
+      });
+    }
+
     return newStore.id;
-  }
+  }, [accountId]);
 
-  function deleteStore(id: number) {
-    setStores(prev => prev.filter(s => s.id !== id));
-    setStoreLists(prev => {
+  // -----------------------------------------------
+  // DELETE STORE
+  // -----------------------------------------------
+  const deleteStore = useCallback((id: number) => {
+    setStoresState((prev) => prev.filter((s) => s.id !== id));
+    setStoreListsState((prev) => {
       const updated = { ...prev };
       delete updated[id];
       return updated;
     });
-    if (selectedStoreId === id) {
-      setSelectedStoreId(null);
+    if (selectedStoreId === id) setSelectedStoreId(null);
+
+    if (accountId) {
+      enqueue({
+        table: "stores",
+        action: "delete",
+        accountId,
+        payload: { id },
+      });
     }
-  }
+  }, [accountId, selectedStoreId]);
 
-  /* ---------------- ADD ITEM ---------------- */
+  // -----------------------------------------------
+  // ADD ITEM TO STORE
+  // -----------------------------------------------
+  const addItemToStore = useCallback((storeId: number, item: any) => {
+    const now = new Date().toISOString();
 
-  function addItemToStore(storeId: number, item: any) {
-    setStoreLists(prev => {
+    setStoreListsState((prev) => {
       const current = prev[storeId] || [];
-      const existingIndex = current.findIndex(
-        listItem => listItem.item.id === item.id
-      );
+      const existingIndex = current.findIndex((li) => li.item.id === item.id);
 
       if (existingIndex !== -1) {
+        // Item already in list — just bump the quantity
         const updated = [...current];
         updated[existingIndex] = {
           ...updated[existingIndex],
-          quantity: updated[existingIndex].quantity + 1
+          quantity: updated[existingIndex].quantity + 1,
+          updated_at: now,
         };
+
+        if (accountId) {
+          enqueue({
+            table: "store_list_items",
+            action: "upsert",
+            accountId,
+            payload: {
+              id: updated[existingIndex].id,
+              account_id: accountId,
+              store_id: storeId,
+              item_id: item.id,
+              quantity: updated[existingIndex].quantity,
+              completed: updated[existingIndex].completed,
+              updated_at: now,
+            },
+          });
+        }
+
         return { ...prev, [storeId]: updated };
       }
 
-      const newItem: StoreListItem = {
+      // New entry
+      const newListItem: StoreListItem = {
         id: Date.now(),
         quantity: 1,
         completed: false,
+        updated_at: now,
+        account_id: accountId ?? undefined,
         item: {
           id: item.id,
           name: item.name,
           imageUrl: item.imageUrl,
-          category: item.category
-        }
+          category: item.category,
+        },
       };
 
-      return { ...prev, [storeId]: [...current, newItem] };
+      if (accountId) {
+        enqueue({
+          table: "store_list_items",
+          action: "upsert",
+          accountId,
+          payload: {
+            id: newListItem.id,
+            account_id: accountId,
+            store_id: storeId,
+            item_id: item.id,
+            quantity: 1,
+            completed: false,
+            updated_at: now,
+          },
+        });
+      }
+
+      return { ...prev, [storeId]: [...current, newListItem] };
     });
-  }
+  }, [accountId]);
 
-  /* ---------------- REMOVE ITEM ---------------- */
-
-  function removeItemFromStore(storeId: number, listItemId: number) {
-    setStoreLists(prev => ({
+  // -----------------------------------------------
+  // REMOVE ITEM FROM STORE
+  // -----------------------------------------------
+  const removeItemFromStore = useCallback((storeId: number, listItemId: number) => {
+    setStoreListsState((prev) => ({
       ...prev,
-      [storeId]: (prev[storeId] || []).filter(item => item.id !== listItemId)
+      [storeId]: (prev[storeId] || []).filter((item) => item.id !== listItemId),
     }));
-  }
 
-  /* ---------------- UPDATE QUANTITY ---------------- */
+    if (accountId) {
+      enqueue({
+        table: "store_list_items",
+        action: "delete",
+        accountId,
+        payload: { id: listItemId },
+      });
+    }
+  }, [accountId]);
 
-  // Quantity stops at 1 — use the tick button to remove items intentionally
-  function updateItemQuantity(storeId: number, listItemId: number, quantity: number) {
+  // -----------------------------------------------
+  // UPDATE QUANTITY
+  // -----------------------------------------------
+  const updateItemQuantity = useCallback((
+    storeId: number,
+    listItemId: number,
+    quantity: number
+  ) => {
     if (quantity < 1) return;
+    const now = new Date().toISOString();
 
-    setStoreLists(prev => ({
-      ...prev,
-      [storeId]: (prev[storeId] || []).map(item =>
-        item.id === listItemId ? { ...item, quantity } : item
-      )
-    }));
-  }
+    setStoreListsState((prev) => {
+      const updated = (prev[storeId] || []).map((item) =>
+        item.id === listItemId ? { ...item, quantity, updated_at: now } : item
+      );
 
-  /* ---------------- TOGGLE COMPLETE ---------------- */
+      const listItem = updated.find((i) => i.id === listItemId);
+      if (accountId && listItem) {
+        enqueue({
+          table: "store_list_items",
+          action: "upsert",
+          accountId,
+          payload: {
+            id: listItemId,
+            account_id: accountId,
+            store_id: storeId,
+            item_id: listItem.item.id,
+            quantity,
+            completed: listItem.completed,
+            updated_at: now,
+          },
+        });
+      }
 
-  function toggleItemCompleted(storeId: number, listItemId: number) {
-    setStoreLists(prev => ({
-      ...prev,
-      [storeId]: (prev[storeId] || []).map(item =>
-        item.id === listItemId ? { ...item, completed: !item.completed } : item
-      )
-    }));
-  }
+      return { ...prev, [storeId]: updated };
+    });
+  }, [accountId]);
 
-  /* ---------------- SYNC ITEM DETAILS ---------------- */
+  // -----------------------------------------------
+  // TOGGLE COMPLETED
+  // -----------------------------------------------
+  const toggleItemCompleted = useCallback((storeId: number, listItemId: number) => {
+    const now = new Date().toISOString();
 
-  // FIX 4: When an item is edited in the Database, update its snapshot
-  // in every store list so the shopping list stays in sync.
-  function syncItemDetails(
+    setStoreListsState((prev) => {
+      const updated = (prev[storeId] || []).map((item) =>
+        item.id === listItemId
+          ? { ...item, completed: !item.completed, updated_at: now }
+          : item
+      );
+
+      const listItem = updated.find((i) => i.id === listItemId);
+      if (accountId && listItem) {
+        enqueue({
+          table: "store_list_items",
+          action: "upsert",
+          accountId,
+          payload: {
+            id: listItemId,
+            account_id: accountId,
+            store_id: storeId,
+            item_id: listItem.item.id,
+            quantity: listItem.quantity,
+            completed: listItem.completed,
+            updated_at: now,
+          },
+        });
+      }
+
+      return { ...prev, [storeId]: updated };
+    });
+  }, [accountId]);
+
+  // -----------------------------------------------
+  // SYNC ITEM DETAILS
+  // When an item is edited in the Database page,
+  // update its snapshot in every store list.
+  // -----------------------------------------------
+  const syncItemDetails = useCallback((
     itemId: number,
     updates: { name?: string; imageUrl?: string; category?: string }
-  ) {
-    setStoreLists(prev => {
+  ) => {
+    setStoreListsState((prev) => {
       const next = { ...prev };
       for (const storeId in next) {
-        next[storeId] = next[storeId].map(listItem =>
+        next[storeId] = next[storeId].map((listItem) =>
           listItem.item.id === itemId
             ? { ...listItem, item: { ...listItem.item, ...updates } }
             : listItem
@@ -263,41 +448,39 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       }
       return next;
     });
-  }
+  }, []);
 
   return (
-    <StoreContext.Provider
-      value={{
-        stores,
-        selectedStoreId,
-        setSelectedStoreId,
-        storeLists,
-
-        sortByAisle,
-        setSortByAisle,
-
-        addStore,
-        deleteStore,
-        addItemToStore,
-        removeItemFromStore,
-        updateItemQuantity,
-        toggleItemCompleted,
-        syncItemDetails,
-      }}
-    >
+    <StoreContext.Provider value={{
+      stores,
+      selectedStoreId,
+      setSelectedStoreId,
+      storeLists,
+      sortByAisle,
+      setSortByAisle,
+      accountId,
+      setAccountId,
+      addStore,
+      deleteStore,
+      addItemToStore,
+      removeItemFromStore,
+      updateItemQuantity,
+      toggleItemCompleted,
+      syncItemDetails,
+      setStores,
+      setStoreListItems,
+    }}>
       {children}
     </StoreContext.Provider>
   );
 }
 
-/* ------------------------------------------------ */
-/* HOOK                                             */
-/* ------------------------------------------------ */
+// =============================================
+// HOOK
+// =============================================
 
 export function useStoreContext() {
   const context = useContext(StoreContext);
-  if (!context) {
-    throw new Error("useStoreContext must be used inside StoreProvider");
-  }
+  if (!context) throw new Error("useStoreContext must be used inside StoreProvider");
   return context;
 }

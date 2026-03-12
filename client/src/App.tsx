@@ -4,8 +4,9 @@ import { useEffect, useState } from "react";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { PwaUpdater } from "@/components/pwa-update";
-import { ItemsProvider } from "@/context/items-context";
-import { StoreProvider } from "@/context/store-context";
+import { ItemsProvider, useItems } from "@/context/items-context";
+import { StoreProvider, useStoreContext } from "@/context/store-context";
+import { useSync } from "@/hooks/use-sync";
 
 import { ThemeProvider } from "@/components/theme-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -19,16 +20,18 @@ import ShoppingList from "@/pages/shopping-list";
 import Database from "@/pages/database";
 import Login from "@/pages/login";
 
+// =============================================
+// NETWORK STATUS BANNER
+// =============================================
+
 function NetworkStatus() {
   const [online, setOnline] = useState(navigator.onLine);
 
   useEffect(() => {
     const goOnline = () => setOnline(true);
     const goOffline = () => setOnline(false);
-
     window.addEventListener("online", goOnline);
     window.addEventListener("offline", goOffline);
-
     return () => {
       window.removeEventListener("online", goOnline);
       window.removeEventListener("offline", goOffline);
@@ -45,6 +48,59 @@ function NetworkStatus() {
     </div>
   );
 }
+
+// =============================================
+// SYNC BRIDGE
+// This sits inside both context providers so
+// it can read and write to both of them.
+// It's a separate component so the sync logic
+// doesn't clutter AppInner.
+// =============================================
+
+function SyncBridge({ accountId }: { accountId: number }) {
+  const {
+    items,
+    setItems,
+    setAccountId: setItemsAccountId,
+  } = useItems();
+
+  const {
+    stores,
+    storeLists,
+    setStores,
+    setStoreListItems,
+    setAccountId: setStoreAccountId,
+  } = useStoreContext();
+
+  // Pass accountId down into both contexts
+  // so every enqueue call knows which account
+  // to tag the row with.
+  useEffect(() => {
+    setItemsAccountId(accountId);
+    setStoreAccountId(accountId);
+  }, [accountId, setItemsAccountId, setStoreAccountId]);
+
+  // Flatten storeLists (grouped by storeId) into
+  // a single array for the merge helper in useSync.
+  const getLocalStoreListItems = () =>
+    Object.values(storeLists).flat();
+
+  useSync({
+    accountId,
+    onItemsPulled: setItems,
+    onStoresPulled: setStores,
+    onStoreListItemsPulled: setStoreListItems,
+    getLocalItems: () => items,
+    getLocalStores: () => stores,
+    getLocalStoreListItems,
+  });
+
+  return null;
+}
+
+// =============================================
+// APP INNER
+// =============================================
 
 function AppInner() {
   const { data: auth, isLoading } = useAuth();
@@ -64,14 +120,23 @@ function AppInner() {
 
   return (
     <Layout auth={auth}>
+
+      {/* Wire up sync now that we have an accountId */}
+      <SyncBridge accountId={auth.account.id} />
+
       <Switch>
         <Route path="/" component={ShoppingList} />
         <Route path="/database" component={Database} />
         <Route component={NotFound} />
       </Switch>
+
     </Layout>
   );
 }
+
+// =============================================
+// APP ROOT
+// =============================================
 
 export default function App() {
   return (
@@ -83,7 +148,6 @@ export default function App() {
             <StoreProvider>
 
               <NetworkStatus />
-
               <Toaster />
               <PwaUpdater />
               <AppInner />
