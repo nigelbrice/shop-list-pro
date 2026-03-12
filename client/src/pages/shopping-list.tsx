@@ -391,8 +391,8 @@ export default function ShoppingList(){
               <span
                 className={`inline-flex items-center justify-center text-xs font-bold rounded-full w-5 h-5 ${
                   selectedStoreId === store.id
-                    ? "bg-white text-primary"
-                    : "bg-primary text-white"
+                    ? "bg-black text-green-400"
+                    : "bg-green-500 text-black"
                 }`}
               >
                 {itemCount}

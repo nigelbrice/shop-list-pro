@@ -158,8 +158,8 @@ export function ItemCard({ item }: { item: Item }) {
           disabled={!targetStoreId}
           className={`flex-1 min-w-0 text-xs px-1 py-1 rounded-lg border font-medium transition truncate ${
             isAdded
-              ? "bg-green-600 text-white border-green-600 hover:bg-red-500 hover:border-red-500"
-              : "bg-background hover:bg-secondary"
+              ? "bg-green-600 text-white border-green-600 active:bg-red-500 active:border-red-500"
+              : "bg-background hover:bg-secondary active:bg-secondary"
           } disabled:opacity-40`}
         >
           {isAdded ? "✓ Added" : "Add"}
