@@ -381,8 +381,8 @@ export default function ShoppingList(){
             onClick={() => setSelectedStoreId(store.id)}
             className={`relative px-3 py-2 rounded-lg border flex items-center gap-2 ${
               selectedStoreId === store.id
-                ? "bg-primary text-white"
-                : "bg-secondary"
+                ? "bg-primary text-primary-foreground border-primary"
+                : "bg-secondary text-foreground"
             }`}
           >
             {store.name}
@@ -391,8 +391,8 @@ export default function ShoppingList(){
               <span
                 className={`inline-flex items-center justify-center text-xs font-bold rounded-full w-5 h-5 ${
                   selectedStoreId === store.id
-                    ? "bg-black text-green-400"
-                    : "bg-green-500 text-black"
+                    ? "bg-primary-foreground text-primary"
+                    : "bg-primary text-primary-foreground"
                 }`}
               >
                 {itemCount}

@@ -110,8 +110,8 @@ export function ItemCard({ item }: { item: Item }) {
   return (
     // CHANGE 1: compact card sizing for mobile
     <div
-      className={`bg-card border rounded-xl p-1.5 flex flex-col gap-1.5 transition shadow-sm hover:shadow-md ${
-        isAdded ? "border-green-500/60" : ""
+      className={`bg-card border rounded-xl p-1.5 flex flex-col gap-1.5 transition shadow-sm hover:shadow-md overflow-hidden ${
+        isAdded ? "border-primary/60" : ""
       }`}
     >
 
@@ -158,8 +158,8 @@ export function ItemCard({ item }: { item: Item }) {
           disabled={!targetStoreId}
           className={`flex-1 min-w-0 text-xs px-1 py-1 rounded-lg border font-medium transition truncate ${
             isAdded
-              ? "bg-green-600 text-white border-green-600 active:bg-red-500 active:border-red-500"
-              : "bg-background hover:bg-secondary active:bg-secondary"
+              ? "bg-primary text-primary-foreground border-primary active:bg-destructive active:border-destructive"
+              : "bg-background border-border hover:bg-secondary active:bg-secondary"
           } disabled:opacity-40`}
         >
           {isAdded ? "✓ Added" : "Add"}

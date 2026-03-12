@@ -229,12 +229,10 @@ export default function Database() {
 
       {/* Item Grid */}
       {filteredAndSortedItems.length > 0 ? (
-        <div className="max-w-6xl mx-auto px-4">
-          <div className="grid gap-2 grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
-            {filteredAndSortedItems.map((item: any) => (
-              <ItemCard key={item.id} item={item} />
-            ))}
-          </div>
+        <div className="grid gap-2 grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6">
+          {filteredAndSortedItems.map((item: any) => (
+            <ItemCard key={item.id} item={item} />
+          ))}
         </div>
       ) : (
         <div className="flex flex-col items-center justify-center text-center p-12 bg-card border border-border/50 border-dashed rounded-3xl min-h-[300px]">

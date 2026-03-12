@@ -110,7 +110,7 @@ export function ItemsProvider({ children }: { children: React.ReactNode }) {
   ) => {
     const newItem: Item = {
       id: Date.now(),
-      name,
+      name: name.trim().replace(/\b\w/g, c => c.toUpperCase()),
       category,
       imageUrl,
       preferredStoreId,
