@@ -57,18 +57,20 @@ export function useSync(handlers: SyncHandlers) {
         pullStoreListItems(accountId),
       ]);
 
-      // Merge remote into local and update state
-      if (remoteItems) {
+      // Merge remote into local and update state.
+      // Guard: only merge if remote returned something —
+      // never wipe local data with an empty result.
+      if (remoteItems && remoteItems.length > 0) {
         const merged = mergeRows(getLocalItems(), remoteItems);
         onItemsPulled(merged);
       }
 
-      if (remoteStores) {
+      if (remoteStores && remoteStores.length > 0) {
         const merged = mergeRows(getLocalStores(), remoteStores);
         onStoresPulled(merged);
       }
 
-      if (remoteListItems) {
+      if (remoteListItems && remoteListItems.length > 0) {
         const merged = mergeRows(getLocalStoreListItems(), remoteListItems);
         onStoreListItemsPulled(merged);
       }
