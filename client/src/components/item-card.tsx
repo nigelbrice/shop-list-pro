@@ -150,13 +150,13 @@ export function ItemCard({ item }: { item: Item }) {
       </div>
 
       {/* ACTIONS */}
-      <div className="flex items-center justify-between pt-0.5">
+      <div className="flex items-center justify-between gap-1 pt-0.5 overflow-hidden">
 
-        {/* CHANGE 3: toggle button — "Add" or "Remove" */}
+        {/* Toggle add/remove */}
         <button
           onClick={handleToggleStore}
           disabled={!targetStoreId}
-          className={`text-xs px-2 py-1 rounded-lg border font-medium transition ${
+          className={`flex-1 min-w-0 text-xs px-1 py-1 rounded-lg border font-medium transition truncate ${
             isAdded
               ? "bg-green-600 text-white border-green-600 hover:bg-red-500 hover:border-red-500"
               : "bg-background hover:bg-secondary"
@@ -165,12 +165,12 @@ export function ItemCard({ item }: { item: Item }) {
           {isAdded ? "✓ Added" : "Add"}
         </button>
 
-        <div className="flex gap-1">
+        <div className="flex shrink-0">
           <Button
             variant="ghost"
             size="icon"
             onClick={() => openEditDialog(item)}
-            className="text-blue-500 hover:text-blue-600 h-7 w-7"
+            className="text-blue-500 hover:text-blue-600 h-6 w-6"
           >
             <Pencil className="w-3 h-3" />
           </Button>
@@ -179,7 +179,7 @@ export function ItemCard({ item }: { item: Item }) {
             variant="ghost"
             size="icon"
             onClick={() => deleteItem(item.id)}
-            className="text-red-500 hover:text-red-600 h-7 w-7"
+            className="text-red-500 hover:text-red-600 h-6 w-6"
           >
             <Trash2 className="w-3 h-3" />
           </Button>
