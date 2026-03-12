@@ -144,7 +144,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, [selectedStoreId]);
 
   useEffect(() => {
-    localStorage.setItem("shopeeze_store_lists", JSON.stringify(storeLists));
+    try {
+      localStorage.setItem("shopeeze_store_lists", JSON.stringify(storeLists));
+    } catch (err) {
+      console.warn("Could not save store lists to localStorage (storage full?):", err);
+    }
   }, [storeLists]);
 
   useEffect(() => {
@@ -217,12 +221,9 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   /* ---------------- UPDATE QUANTITY ---------------- */
 
-  // FIX 3: Quantity can't go below 1. If user taps minus at 1, remove the item instead.
+  // Quantity stops at 1 — use the tick button to remove items intentionally
   function updateItemQuantity(storeId: number, listItemId: number, quantity: number) {
-    if (quantity < 1) {
-      removeItemFromStore(storeId, listItemId);
-      return;
-    }
+    if (quantity < 1) return;
 
     setStoreLists(prev => ({
       ...prev,
