@@ -204,6 +204,24 @@ const [newStoreName, setNewStoreName] = useState("");
               <span className="text-muted-foreground font-normal">eeze</span>
             </h1>
 
+            <div className="flex items-center gap-1 ml-1">
+              {navItems.map((item) => (
+                <button
+                  key={item.href}
+                  onClick={() => setLocation(item.href)}
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors",
+                    location === item.href
+                      ? "bg-primary text-primary-foreground"
+                      : "hover:bg-secondary text-muted-foreground hover:text-foreground"
+                  )}
+                >
+                  <span className="text-base leading-none">{item.icon}</span>
+                  <span className="hidden sm:inline">{item.label}</span>
+                </button>
+              ))}
+            </div>
+
           </div>
 
           <MemberMenu auth={auth} />
@@ -359,7 +377,7 @@ const [newStoreName, setNewStoreName] = useState("");
 
       {/* Footer */}
       <div className="text-xs text-muted-foreground">
-        Shopeeze v1.24
+        Shopeeze v1.25
       </div>
 
     </div>
