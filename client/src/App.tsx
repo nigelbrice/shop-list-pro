@@ -80,16 +80,16 @@ function SyncBridge({ accountId }: { accountId: number }) {
     setStoreAccountId(accountId);
   }, [accountId, setItemsAccountId, setStoreAccountId]);
 
-  // Flatten storeLists (grouped by storeId) into
-  // a single array for the merge helper in useSync.
-  const getLocalStoreListItems = () =>
-    Object.values(storeLists).flat();
+  // Pass the raw grouped storeLists object — use-sync.ts flattens
+  // it internally before merging, then passes itemsById through so
+  // setStoreListItems can re-attach item snapshots for any device.
+  const getLocalStoreListItems = () => storeLists;
 
   useSync({
     accountId,
     onItemsPulled: setItems,
     onStoresPulled: setStores,
-    onStoreListItemsPulled: setStoreListItems,
+    onStoreListItemsPulled: (merged, itemsById) => setStoreListItems(merged, itemsById),
     getLocalItems: () => items,
     getLocalStores: () => stores,
     getLocalStoreListItems,

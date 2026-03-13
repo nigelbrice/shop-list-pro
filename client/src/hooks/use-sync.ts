@@ -13,10 +13,13 @@ type SyncHandlers = {
   accountId: number;
   onItemsPulled: (items: any[]) => void;
   onStoresPulled: (stores: any[]) => void;
-  onStoreListItemsPulled: (items: any[]) => void;
+  // Receives merged flat list rows + a map of itemId→item so
+  // setStoreListItems can re-attach snapshots for any device's items.
+  onStoreListItemsPulled: (items: any[], itemsById: Map<number, any>) => void;
   getLocalItems: () => any[];
   getLocalStores: () => any[];
-  getLocalStoreListItems: () => any[];
+  // Returns grouped StoreLists shape: { [storeId]: StoreListItem[] }
+  getLocalStoreListItems: () => any;
 };
 
 // =============================================
@@ -50,35 +53,58 @@ export function useSync(handlers: SyncHandlers) {
     console.log("[sync] Running full sync...");
 
     try {
-      // Flush local pending changes FIRST so that when we pull,
-      // our own offline edits are already in Supabase and both
-      // devices see the full picture in a single sync cycle.
-      await flushQueue();
-
-      // Then pull all three tables in parallel
+      // Pull all three tables in parallel
       const [remoteItems, remoteStores, remoteListItems] = await Promise.all([
         pullItems(accountId),
         pullStores(accountId),
         pullStoreListItems(accountId),
       ]);
 
-      // Merge remote into local and update state.
-      // Guard: only merge if remote returned something —
-      // never wipe local data with an empty result.
+      // --- ITEMS ---
+      // Merge and update, then build an itemsById map from the
+      // result so store list items can look up their snapshots.
+      let mergedItems: any[] = getLocalItems();
       if (remoteItems && remoteItems.length > 0) {
-        const merged = mergeRows(getLocalItems(), remoteItems);
-        onItemsPulled(merged);
+        mergedItems = mergeRows(getLocalItems(), remoteItems);
+        onItemsPulled(mergedItems);
       }
 
+      // Build id → item lookup from fully merged items list.
+      // This lets setStoreListItems resolve names/categories even
+      // for items that were added on a different device.
+      const itemsById = new Map<number, any>(
+        mergedItems.map((item: any) => [Number(item.id), item])
+      );
+
+      // --- STORES ---
       if (remoteStores && remoteStores.length > 0) {
         const merged = mergeRows(getLocalStores(), remoteStores);
         onStoresPulled(merged);
       }
 
+      // --- STORE LIST ITEMS ---
       if (remoteListItems && remoteListItems.length > 0) {
-        const merged = mergeRows(getLocalStoreListItems(), remoteListItems);
-        onStoreListItemsPulled(merged);
+        // getLocalStoreListItems returns grouped shape { [storeId]: [] }
+        // mergeRows needs a flat array — flatten it first.
+        const localGrouped = getLocalStoreListItems();
+        const localFlat: any[] = Object.values(localGrouped).flat();
+
+        // Before merging, stamp each local row with its item snapshot
+        // so mergeRows doesn't lose it when the local row wins.
+        // Remote rows only carry item_id, not the full snapshot.
+        const localFlatWithSnapshot = localFlat.map((row: any) => ({
+          ...row,
+          // Keep item nested so mergeRows preserves it on local-wins
+          item: row.item ?? { id: row.item_id, name: "Unknown" },
+        }));
+
+        const merged = mergeRows(localFlatWithSnapshot, remoteListItems);
+        onStoreListItemsPulled(merged, itemsById);
       }
+
+      // Flush after pulling so we don't overwrite remote data
+      // with a stale local push before we've seen what's there.
+      await flushQueue();
 
       console.log("[sync] Full sync complete.");
 
