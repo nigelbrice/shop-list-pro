@@ -17,27 +17,29 @@ import {
 import { Input } from "@/components/ui/input";
 
 const categoryLabels: Record<string, string> = {
-  produce:   "🥦 Produce",
-  bakery:    "🍞 Bakery",
-  meat:      "🥩 Meat",
-  dairy:     "🥛 Dairy",
-  chilled:   "🧊 Chilled",
-  frozen:    "❄ Frozen",
-  pantry:    "🥫 Pantry",
-  household: "🧴 Household",
-  other:     "📦 Other"
+  produce:    "🥦 Produce",
+  bakery:     "🍞 Bakery",
+  meat:       "🥩 Meat",
+  dairy:      "🥛 Dairy",
+  chilled:    "🧊 Chilled",
+  frozen:     "❄ Frozen",
+  pantry:     "🥫 Pantry",
+  beverages:  "🍾 Beverages",
+  household:  "🧴 Household",
+  other:      "📦 Other"
 };
 
 const categoryIcons: Record<string, string> = {
-  produce:   "🥦",
-  bakery:    "🍞",
-  meat:      "🥩",
-  dairy:     "🥛",
-  chilled:   "🧊",
-  frozen:    "❄️",
-  pantry:    "🥫",
-  household: "🧴",
-  other:     "📦"
+  produce:    "🥦",
+  bakery:     "🍞",
+  meat:       "🥩",
+  dairy:      "🥛",
+  chilled:    "🧊",
+  frozen:     "❄️",
+  pantry:     "🥫",
+  beverages:  "🍾",
+  household:  "🧴",
+  other:      "📦"
 };
 
 type Item = {

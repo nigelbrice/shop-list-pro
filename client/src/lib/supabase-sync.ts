@@ -74,7 +74,18 @@ export async function flushQueue(): Promise<void> {
 
   console.log(`[sync] Flushing ${queue.length} pending operations...`);
 
-  for (const op of queue) {
+  // Sort so parent tables sync before child tables.
+  // stores must exist in Supabase before store_list_items can reference them.
+  const TABLE_ORDER: Record<PendingOp["table"], number> = {
+    items: 0,
+    stores: 1,
+    store_list_items: 2,
+  };
+  const sorted = [...queue].sort(
+    (a, b) => TABLE_ORDER[a.table] - TABLE_ORDER[b.table]
+  );
+
+  for (const op of sorted) {
     try {
       if (op.action === "upsert") {
         const { error } = await supabase

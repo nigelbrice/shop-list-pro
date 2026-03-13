@@ -67,7 +67,7 @@ const StoreContext = createContext<StoreContextType | null>(null);
 
 export const aisleOrder: string[] = [
   "produce", "bakery", "meat", "dairy",
-  "chilled", "frozen", "pantry", "household", "other"
+  "chilled", "frozen", "pantry", "beverages", "household", "other"
 ];
 
 export const categoryOptions = [
@@ -78,6 +78,7 @@ export const categoryOptions = [
   { value: "chilled",   label: "🧊 Chilled" },
   { value: "frozen",    label: "❄ Frozen" },
   { value: "pantry",    label: "🥫 Pantry" },
+  { value: "beverages", label: "🍾 Beverages" },
   { value: "household", label: "🧴 Household" },
   { value: "other",     label: "📦 Other" },
 ];

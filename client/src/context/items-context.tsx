@@ -120,8 +120,10 @@ export function ItemsProvider({ children }: { children: React.ReactNode }) {
     setItemsState((prev) => {
       // Build a map of existing images by id
       const imageMap = new Map(prev.map((i) => [i.id, i.imageUrl]));
-      return incoming.map((item) => ({
+      return incoming.map((item: any) => ({
         ...item,
+        // Supabase returns snake_case — map back to camelCase
+        preferredStoreId: item.preferredStoreId ?? (item.preferred_store ? Number(item.preferred_store) : undefined),
         imageUrl: item.imageUrl ?? imageMap.get(item.id) ?? loadImage(item.id),
       }));
     });
@@ -201,19 +203,25 @@ export function ItemsProvider({ children }: { children: React.ReactNode }) {
     );
 
     if (accountId) {
-      enqueue({
-        table: "items",
-        action: "upsert",
-        accountId,
-        payload: {
-          id,
-          account_id: accountId,
-          name: updates.name,
-          category: updates.category,
-          notes: updates.notes,
-          preferred_store: updates.preferredStoreId ?? null,
-          updated_at: now,
-        },
+      setItemsState((prev) => {
+        const current = prev.find((i) => i.id === id);
+        if (!current) return prev;
+        const merged = { ...current, ...updates };
+        enqueue({
+          table: "items",
+          action: "upsert",
+          accountId,
+          payload: {
+            id,
+            account_id: accountId,
+            name: merged.name,
+            category: merged.category,
+            notes: merged.notes,
+            preferred_store: merged.preferredStoreId ?? null,
+            updated_at: now,
+          },
+        });
+        return prev;
       });
     }
   }, [accountId]);

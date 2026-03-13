@@ -21,15 +21,16 @@ import { Search, Loader2, Database as DbIcon, Library } from "lucide-react";
 type SortOption = "name_asc" | "name_desc" | "newest" | "oldest" | "category";
 
 const categoryLabels: Record<string, string> = {
-  produce: "🥦 Produce",
-  bakery: "🍞 Bakery",
-  meat: "🥩 Meat",
-  dairy: "🥛 Dairy",
-  chilled: "🧊 Chilled",
-  frozen: "❄ Frozen",
-  pantry: "🥫 Pantry",
+  produce:   "🥦 Produce",
+  bakery:    "🍞 Bakery",
+  meat:      "🥩 Meat",
+  dairy:     "🥛 Dairy",
+  chilled:   "🧊 Chilled",
+  frozen:    "❄ Frozen",
+  pantry:    "🥫 Pantry",
+  beverages: "🍾 Beverages",
   household: "🧴 Household",
-  other: "📦 Other",
+  other:     "📦 Other",
 };
 
 export default function Database() {
