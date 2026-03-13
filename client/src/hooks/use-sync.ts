@@ -13,9 +13,7 @@ type SyncHandlers = {
   accountId: number;
   onItemsPulled: (items: any[]) => void;
   onStoresPulled: (stores: any[]) => void;
-  // Also receives a map of itemId → item details so snapshots
-  // can be re-attached even for items added on another device.
-  onStoreListItemsPulled: (items: any[], itemsById: Map<number, any>) => void;
+  onStoreListItemsPulled: (items: any[]) => void;
   getLocalItems: () => any[];
   getLocalStores: () => any[];
   getLocalStoreListItems: () => any[];
@@ -52,19 +50,24 @@ export function useSync(handlers: SyncHandlers) {
     console.log("[sync] Running full sync...");
 
     try {
-      // Pull all three tables in parallel
+      // Flush local pending changes FIRST so that when we pull,
+      // our own offline edits are already in Supabase and both
+      // devices see the full picture in a single sync cycle.
+      await flushQueue();
+
+      // Then pull all three tables in parallel
       const [remoteItems, remoteStores, remoteListItems] = await Promise.all([
         pullItems(accountId),
         pullStores(accountId),
         pullStoreListItems(accountId),
       ]);
 
-      // Merge items first — we need the merged item list to
-      // re-attach snapshots to store list items below.
-      let mergedItems: any[] = getLocalItems();
+      // Merge remote into local and update state.
+      // Guard: only merge if remote returned something —
+      // never wipe local data with an empty result.
       if (remoteItems && remoteItems.length > 0) {
-        mergedItems = mergeRows(getLocalItems(), remoteItems);
-        onItemsPulled(mergedItems);
+        const merged = mergeRows(getLocalItems(), remoteItems);
+        onItemsPulled(merged);
       }
 
       if (remoteStores && remoteStores.length > 0) {
@@ -73,23 +76,9 @@ export function useSync(handlers: SyncHandlers) {
       }
 
       if (remoteListItems && remoteListItems.length > 0) {
-        // Flatten local store lists (grouped by storeId) into a flat
-        // array so mergeRows can compare them with remote rows by id.
-        const localFlat = Object.values(getLocalStoreListItems()).flat();
-        const merged = mergeRows(localFlat, remoteListItems);
-
-        // Build a lookup map from the fully-merged items list so we can
-        // re-attach name/category/etc. even for items added on another device.
-        const itemsById = new Map<number, any>(
-          mergedItems.map((item: any) => [Number(item.id), item])
-        );
-
-        onStoreListItemsPulled(merged, itemsById);
+        const merged = mergeRows(getLocalStoreListItems(), remoteListItems);
+        onStoreListItemsPulled(merged);
       }
-
-      // After pulling, flush any queued local changes
-      // so other users get our offline edits too.
-      await flushQueue();
 
       console.log("[sync] Full sync complete.");
 
