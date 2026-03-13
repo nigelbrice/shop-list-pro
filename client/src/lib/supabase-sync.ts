@@ -164,33 +164,39 @@ export async function pullStoreListItems(accountId: number) {
 // Rows only in local stay (may be pending sync).
 // =============================================
 
-export function mergeRows<T extends { id: number; updated_at?: string }>(
+export function mergeRows<T extends { id: number | string; updated_at?: string }>(
   local: T[],
   remote: T[]
 ): T[] {
   const merged = new Map<number, T>();
 
+  // Always coerce id to number — Supabase returns bigint columns
+  // as strings, but local state stores them as numbers. Without
+  // this, the same row gets two Map entries and remote always wins,
+  // wiping out the local item snapshot (name, category etc.).
   for (const row of local) {
-    merged.set(row.id, row);
+    merged.set(Number(row.id), row);
   }
 
   for (const row of remote) {
-    const existing = merged.get(row.id);
+    const existing = merged.get(Number(row.id));
 
     if (!existing) {
-      // New row from another user — add it
-      merged.set(row.id, row);
+      // New row from another device — add it
+      merged.set(Number(row.id), { ...row, id: Number(row.id) } as any);
     } else {
       const localTime = new Date(existing.updated_at ?? 0).getTime();
       const remoteTime = new Date(row.updated_at ?? 0).getTime();
 
       if (remoteTime > localTime) {
-        // Remote is newer — use it but preserve
-        // local imageUrl since images aren't in Supabase
-        merged.set(row.id, {
+        // Remote is newer — use it but preserve local imageUrl
+        // and item snapshot since those aren't stored in Supabase.
+        merged.set(Number(row.id), {
           ...row,
+          id: Number(row.id),
           imageUrl: (existing as any).imageUrl ?? (row as any).imageUrl,
-        });
+          item: (existing as any).item ?? (row as any).item,
+        } as any);
       }
     }
   }

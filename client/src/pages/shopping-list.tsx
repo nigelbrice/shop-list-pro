@@ -94,15 +94,16 @@ function groupItemsByCategory(items: StoreListItem[]) {
 /* ------------------------------------------------ */
 
 const categoryLabels: Record<string, string> = {
-  produce: "🥦 Produce",
-  bakery: "🍞 Bakery",
-  meat: "🥩 Meat",
-  dairy: "🥛 Dairy",
-  chilled: "🧊 Chilled",
-  frozen: "❄ Frozen",
-  pantry: "🥫 Pantry",
+  produce:   "🥦 Produce",
+  bakery:    "🍞 Bakery",
+  meat:      "🥩 Meat",
+  dairy:     "🥛 Dairy",
+  chilled:   "🧊 Chilled",
+  frozen:    "❄ Frozen",
+  pantry:    "🥫 Pantry",
+  beverages: "🍾 Beverages",
   household: "🧴 Household",
-  other: "📦 Other"
+  other:     "📦 Other"
 };
 
 /* ------------------------------------------------ */
