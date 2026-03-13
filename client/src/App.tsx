@@ -80,9 +80,7 @@ function SyncBridge({ accountId }: { accountId: number }) {
     setStoreAccountId(accountId);
   }, [accountId, setItemsAccountId, setStoreAccountId]);
 
-  // Pass the raw grouped storeLists object — use-sync.ts flattens
-  // it internally before merging, then passes itemsById through so
-  // setStoreListItems can re-attach item snapshots for any device.
+  // Pass raw grouped storeLists — use-sync.ts flattens it internally.
   const getLocalStoreListItems = () => storeLists;
 
   useSync({
