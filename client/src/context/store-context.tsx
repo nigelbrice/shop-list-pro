@@ -56,7 +56,7 @@ type StoreContextType = {
 
   // Called by useSync after pulling from Supabase
   setStores: (stores: Store[]) => void;
-  setStoreListItems: (items: StoreListItem[]) => void;
+  setStoreListItems: (items: StoreListItem[], itemsById?: Map<number, any>) => void;
 };
 
 const StoreContext = createContext<StoreContextType | null>(null);
@@ -167,13 +167,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   // locally we group them by storeId. This converts
   // the flat array back into the grouped shape.
   // -----------------------------------------------
-  const setStoreListItems = useCallback((incoming: StoreListItem[]) => {
+  const setStoreListItems = useCallback((incoming: StoreListItem[], itemsById?: Map<number, any>) => {
     setStoreListsState((prev) => {
-      const next: StoreLists = { ...prev };
-
-      // Build a flat map of all existing list items
-      // so we can preserve the item snapshot (name,
-      // image etc.) which isn't stored in Supabase.
+      // Build a flat map of existing list items so we can
+      // fall back to local snapshots if itemsById doesn't have it.
       const existingMap = new Map<number, StoreListItem>();
       for (const storeId in prev) {
         for (const li of prev[storeId]) {
@@ -181,28 +178,30 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         }
       }
 
-      // Clear out old entries and regroup by store_id
+      // Regroup flat rows by store_id, re-attaching item snapshots.
       const grouped: StoreLists = {};
       for (const row of incoming) {
         const storeId = (row as any).store_id;
         if (!storeId) continue;
-
         if (!grouped[storeId]) grouped[storeId] = [];
 
-        // Re-attach the item snapshot from local state
-        // if we have it (Supabase only stores item_id)
         const existing = existingMap.get(row.id);
-        grouped[storeId].push({
-          ...row,
-          item: existing?.item ?? row.item ?? { id: (row as any).item_id, name: "Unknown" },
-        });
+        const itemId = Number((row as any).item_id ?? existing?.item?.id);
+
+        // Prefer: fully synced items table → local snapshot → fallback
+        const itemDetail = itemsById?.get(itemId);
+        const item = itemDetail
+          ? { id: itemId, name: itemDetail.name, category: itemDetail.category, imageUrl: existing?.item?.imageUrl ?? itemDetail.imageUrl }
+          : existing?.item
+          ?? { id: itemId, name: "Unknown" };
+
+        grouped[storeId].push({ ...row, item });
       }
 
-      // Merge: keep any stores that weren't in the
-      // remote pull (e.g. stores with no list items yet)
-      for (const storeId in next) {
+      // Keep stores that had no remote list items (e.g. newly created)
+      for (const storeId in prev) {
         if (!grouped[storeId]) {
-          grouped[storeId] = next[storeId];
+          grouped[storeId] = prev[storeId];
         }
       }
 

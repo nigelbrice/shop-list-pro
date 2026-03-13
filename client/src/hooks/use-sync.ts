@@ -13,7 +13,9 @@ type SyncHandlers = {
   accountId: number;
   onItemsPulled: (items: any[]) => void;
   onStoresPulled: (stores: any[]) => void;
-  onStoreListItemsPulled: (items: any[]) => void;
+  // Also receives a map of itemId → item details so snapshots
+  // can be re-attached even for items added on another device.
+  onStoreListItemsPulled: (items: any[], itemsById: Map<number, any>) => void;
   getLocalItems: () => any[];
   getLocalStores: () => any[];
   getLocalStoreListItems: () => any[];
@@ -57,12 +59,12 @@ export function useSync(handlers: SyncHandlers) {
         pullStoreListItems(accountId),
       ]);
 
-      // Merge remote into local and update state.
-      // Guard: only merge if remote returned something —
-      // never wipe local data with an empty result.
+      // Merge items first — we need the merged item list to
+      // re-attach snapshots to store list items below.
+      let mergedItems: any[] = getLocalItems();
       if (remoteItems && remoteItems.length > 0) {
-        const merged = mergeRows(getLocalItems(), remoteItems);
-        onItemsPulled(merged);
+        mergedItems = mergeRows(getLocalItems(), remoteItems);
+        onItemsPulled(mergedItems);
       }
 
       if (remoteStores && remoteStores.length > 0) {
@@ -71,8 +73,18 @@ export function useSync(handlers: SyncHandlers) {
       }
 
       if (remoteListItems && remoteListItems.length > 0) {
-        const merged = mergeRows(getLocalStoreListItems(), remoteListItems);
-        onStoreListItemsPulled(merged);
+        // Flatten local store lists (grouped by storeId) into a flat
+        // array so mergeRows can compare them with remote rows by id.
+        const localFlat = Object.values(getLocalStoreListItems()).flat();
+        const merged = mergeRows(localFlat, remoteListItems);
+
+        // Build a lookup map from the fully-merged items list so we can
+        // re-attach name/category/etc. even for items added on another device.
+        const itemsById = new Map<number, any>(
+          mergedItems.map((item: any) => [Number(item.id), item])
+        );
+
+        onStoreListItemsPulled(merged, itemsById);
       }
 
       // After pulling, flush any queued local changes
