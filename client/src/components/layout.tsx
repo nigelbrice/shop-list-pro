@@ -28,7 +28,7 @@ function MemberMenu({ auth }: { auth: AuthState }) {
   const logoutMutation = useLogout();
   const { toast } = useToast();
 
-  const activeUser = auth.users.find(u => u.id === auth.activeUserId);
+  const activeUser = auth.users.find(u => Number(u.id) === Number(auth.activeUserId));
 
   const handleAdd = async () => {
     if (!newName.trim()) return;
@@ -72,21 +72,21 @@ function MemberMenu({ auth }: { auth: AuthState }) {
             >
               <button
                 className="flex items-center gap-2 flex-1 text-left text-sm"
-                onClick={() => switchMutation.mutate(user.id)}
+                onClick={() => switchMutation.mutate(Number(user.id))}
                 data-testid={`button-switch-user-${user.id}`}
               >
                 <div className={cn(
                   "w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold shrink-0",
-                  user.id === auth.activeUserId
+                  Number(user.id) === Number(auth.activeUserId)
                     ? "bg-primary text-primary-foreground"
                     : "bg-secondary text-muted-foreground"
                 )}>
-                  {user.id === auth.activeUserId
+                  {Number(user.id) === Number(auth.activeUserId)
                     ? <Check className="w-3 h-3" />
                     : user.name[0].toUpperCase()
                   }
                 </div>
-                <span className={user.id === auth.activeUserId ? "font-semibold" : ""}>{user.name}</span>
+                <span className={Number(user.id) === Number(auth.activeUserId) ? "font-semibold" : ""}>{user.name}</span>
               </button>
               {auth.users.length > 1 && (
                 <button
@@ -377,7 +377,7 @@ const [newStoreName, setNewStoreName] = useState("");
 
       {/* Footer */}
       <div className="text-xs text-muted-foreground">
-        Shopeeze v1.29
+        Shopeeze v1.30
       </div>
 
     </div>

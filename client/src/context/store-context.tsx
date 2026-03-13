@@ -19,6 +19,8 @@ export type StoreListItem = {
   completed: boolean;
   updated_at?: string;
   account_id?: number;
+  added_by_user_id?: number;
+  added_by_name?: string;
   item: {
     id: number;
     name: string;
@@ -46,7 +48,7 @@ type StoreContextType = {
   addStore: (name: string) => number;
   deleteStore: (id: number) => void;
 
-  addItemToStore: (storeId: number, item: any) => void;
+  addItemToStore: (storeId: number, item: any, addedByUserId?: number, addedByName?: string) => void;
   removeItemFromStore: (storeId: number, listItemId: number) => void;
   updateItemQuantity: (storeId: number, listItemId: number, quantity: number) => void;
   toggleItemCompleted: (storeId: number, listItemId: number) => void;
@@ -214,7 +216,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
     const now = new Date().toISOString();
     const newStore: Store = {
       id: Date.now(),
-      name,
+      name: name.trim().replace(/\b\w/g, c => c.toUpperCase()),
       itemCount: 0,
       account_id: accountId ?? undefined,
       updated_at: now,
@@ -264,7 +266,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   // -----------------------------------------------
   // ADD ITEM TO STORE
   // -----------------------------------------------
-  const addItemToStore = useCallback((storeId: number, item: any) => {
+  const addItemToStore = useCallback((storeId: number, item: any, addedByUserId?: number, addedByName?: string) => {
     const now = new Date().toISOString();
 
     setStoreListsState((prev) => {
@@ -292,6 +294,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
               item_id: item.id,
               quantity: updated[existingIndex].quantity,
               completed: updated[existingIndex].completed,
+              added_by_user_id: updated[existingIndex].added_by_user_id,
+              added_by_name: updated[existingIndex].added_by_name,
               updated_at: now,
             },
           });
@@ -307,6 +311,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         completed: false,
         updated_at: now,
         account_id: accountId ?? undefined,
+        added_by_user_id: addedByUserId,
+        added_by_name: addedByName,
         item: {
           id: item.id,
           name: item.name,
@@ -327,6 +333,8 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
             item_id: item.id,
             quantity: 1,
             completed: false,
+            added_by_user_id: addedByUserId ?? null,
+            added_by_name: addedByName ?? null,
             updated_at: now,
           },
         });

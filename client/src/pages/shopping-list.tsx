@@ -1,11 +1,13 @@
 import { useState, useEffect, useCallback } from "react";
 import { useStoreContext, aisleOrder } from "@/context/store-context";
+import { useAuth } from "@/hooks/use-auth";
 
 import {
   ShoppingBag,
   CheckCircle2,
   Check,
-  Package
+  Package,
+  Trash2
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -13,6 +15,8 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle
 } from "@/components/ui/dialog";
@@ -46,6 +50,8 @@ type StoreListItem = {
   id: number;
   quantity: number;
   completed: boolean;
+  added_by_user_id?: number;
+  added_by_name?: string;
   item: {
     id: number;
     name: string;
@@ -103,7 +109,7 @@ const categoryLabels: Record<string, string> = {
 /* STORE LIST ROW                                   */
 /* ------------------------------------------------ */
 
-function StoreListRow({ listItem }: { listItem: StoreListItem }) {
+function StoreListRow({ listItem, showAddedBy }: { listItem: StoreListItem; showAddedBy: boolean }) {
 
   const {
     selectedStoreId,
@@ -122,6 +128,9 @@ function StoreListRow({ listItem }: { listItem: StoreListItem }) {
         <DialogContent className="max-w-lg border-border/50 shadow-2xl">
           <DialogHeader>
             <DialogTitle>{listItem.item?.name}</DialogTitle>
+            <DialogDescription>
+              {listItem.item?.category ?? "Item"} photo
+            </DialogDescription>
           </DialogHeader>
 
           <div className="rounded-xl overflow-hidden bg-secondary/30">
@@ -137,6 +146,12 @@ function StoreListRow({ listItem }: { listItem: StoreListItem }) {
               </div>
             )}
           </div>
+
+          {hasImage && (
+            <p className="text-xs text-muted-foreground text-center">
+              📱 Photo saved on this device only
+            </p>
+          )}
         </DialogContent>
       </Dialog>
 
@@ -157,9 +172,16 @@ function StoreListRow({ listItem }: { listItem: StoreListItem }) {
             <Check className="w-4 h-4 text-primary" />
           </Button>
 
-          <h3 className="text-lg sm:text-xl font-semibold flex-1">
-            {listItem.item?.name}
-          </h3>
+          <div className="flex flex-col flex-1">
+            <h3 className="text-lg sm:text-xl font-semibold">
+              {listItem.item?.name}
+            </h3>
+            {showAddedBy && listItem.added_by_name && (
+              <span className="text-xs text-muted-foreground">
+                Added by: {listItem.added_by_name}
+              </span>
+            )}
+          </div>
 
           <button
             onClick={() => hasImage && setShowPhoto(true)}
@@ -230,10 +252,12 @@ function StoreListRow({ listItem }: { listItem: StoreListItem }) {
 
 function SortableCategory({
   category,
-  items
+  items,
+  showAddedBy
 }:{
   category:string
   items:StoreListItem[]
+  showAddedBy: boolean
 }){
 
   const {
@@ -261,7 +285,7 @@ function SortableCategory({
 
       <div className="space-y-2">
         {items.map(item => (
-          <StoreListRow key={item.id} listItem={item} />
+          <StoreListRow key={item.id} listItem={item} showAddedBy={showAddedBy} />
         ))}
       </div>
 
@@ -280,11 +304,16 @@ export default function ShoppingList(){
     setSelectedStoreId,
     stores,
     storeLists,
+    deleteStore,
     sortByAisle: aisleSortingEnabled
   } = useStoreContext();
 
+  const { data: auth } = useAuth();
+  const showAddedBy = (auth?.users?.length ?? 0) >= 2;
+
   const [orderedItems,setOrderedItems] = useState<StoreListItem[]>([]);
   const [categoryOrder,setCategoryOrder] = useState<string[]>([]);
+  const [confirmDeleteStore, setConfirmDeleteStore] = useState<number | null>(null);
 
   useEffect(() => {
 
@@ -374,13 +403,14 @@ export default function ShoppingList(){
       {stores.map((store) => {
 
         const itemCount = (storeLists[store.id] || []).length;
+        const isActive = selectedStoreId === store.id;
 
         return (
           <button
             key={store.id}
             onClick={() => setSelectedStoreId(store.id)}
             className={`relative px-3 py-2 rounded-lg border flex items-center gap-2 ${
-              selectedStoreId === store.id
+              isActive
                 ? "bg-primary text-primary-foreground border-primary"
                 : "bg-secondary text-foreground"
             }`}
@@ -390,12 +420,26 @@ export default function ShoppingList(){
             {itemCount > 0 && (
               <span
                 className={`inline-flex items-center justify-center text-xs font-bold rounded-full w-5 h-5 ${
-                  selectedStoreId === store.id
+                  isActive
                     ? "bg-primary-foreground text-primary"
                     : "bg-primary text-primary-foreground"
                 }`}
               >
                 {itemCount}
+              </span>
+            )}
+
+            {isActive && (
+              <span
+                role="button"
+                aria-label={`Remove ${store.name}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setConfirmDeleteStore(store.id);
+                }}
+                className="ml-1 opacity-70 hover:opacity-100 transition-opacity"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
               </span>
             )}
           </button>
@@ -407,9 +451,37 @@ export default function ShoppingList(){
 
   );
 
+  const storeToDelete = stores.find(s => s.id === confirmDeleteStore);
+
   return (
 
     <div className="max-w-3xl mx-auto space-y-6">
+
+      {/* CONFIRM DELETE STORE DIALOG */}
+      <Dialog open={confirmDeleteStore !== null} onOpenChange={() => setConfirmDeleteStore(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Remove {storeToDelete?.name}?</DialogTitle>
+            <DialogDescription>
+              This will remove the store and clear its shopping list. Your items in the database won't be affected.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmDeleteStore(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                if (confirmDeleteStore) deleteStore(confirmDeleteStore);
+                setConfirmDeleteStore(null);
+              }}
+            >
+              Remove store
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <StoreTabs/>
 
@@ -457,6 +529,7 @@ export default function ShoppingList(){
                         key={category}
                         category={category}
                         items={items}
+                        showAddedBy={showAddedBy}
                       />
                     );
 

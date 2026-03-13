@@ -190,7 +190,7 @@ export default function Database() {
             <button
               onClick={() => setCategoryFilter("all")}
               className={`px-3 py-1 rounded-full border text-sm whitespace-nowrap ${
-                categoryFilter === "all" ? "bg-primary text-white" : "bg-secondary"
+                categoryFilter === "all" ? "bg-primary text-black" : "bg-secondary"
               }`}
             >
               All
@@ -200,7 +200,7 @@ export default function Database() {
                 key={cat}
                 onClick={() => setCategoryFilter(cat)}
                 className={`px-3 py-1 rounded-full border text-sm whitespace-nowrap ${
-                  categoryFilter === cat ? "bg-primary text-white" : "bg-secondary"
+                  categoryFilter === cat ? "bg-primary text-black" : "bg-secondary"
                 }`}
               >
                 {categoryLabels[cat] ?? cat}

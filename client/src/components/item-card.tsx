@@ -2,11 +2,13 @@ import { Trash2, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useItems } from "@/context/items-context";
 import { useStoreContext } from "@/context/store-context";
+import { useAuth } from "@/hooks/use-auth";
 import { useState, useRef } from "react";
 
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter
@@ -48,8 +50,10 @@ type Item = {
 
 export function ItemCard({ item }: { item: Item }) {
   const { deleteItem, updateItem } = useItems();
+  const { data: auth } = useAuth();
+  const activeUser = auth?.users.find(u => Number(u.id) === Number(auth.activeUserId));
 
-  const { selectedStoreId, addItemToStore, removeItemFromStore, stores, storeLists, syncItemDetails } =
+  const { selectedStoreId, addItemToStore, removeItemFromStore, stores, storeLists, syncItemDetails, addStore } =
     useStoreContext();
 
   const [editingItem, setEditingItem] = useState<Item | null>(null);
@@ -57,6 +61,8 @@ export function ItemCard({ item }: { item: Item }) {
   const [editImage, setEditImage] = useState("");
   const [editCategory, setEditCategory] = useState("");
   const [editPreferredStore, setEditPreferredStore] = useState<number | undefined>(undefined);
+  const [showAddStore, setShowAddStore] = useState(false);
+  const [newStoreName, setNewStoreName] = useState("");
 
   const nameInputRef = useRef<HTMLInputElement>(null);
 
@@ -101,7 +107,7 @@ export function ItemCard({ item }: { item: Item }) {
     if (isAdded && listEntry) {
       removeItemFromStore(targetStoreId, listEntry.id);
     } else {
-      addItemToStore(targetStoreId, item);
+      addItemToStore(targetStoreId, item, activeUser ? Number(activeUser.id) : undefined, activeUser?.name);
     }
   };
 
@@ -110,7 +116,7 @@ export function ItemCard({ item }: { item: Item }) {
   return (
     // CHANGE 1: compact card sizing for mobile
     <div
-      className={`bg-card border rounded-xl p-1.5 flex flex-col gap-1.5 transition shadow-sm hover:shadow-md overflow-hidden ${
+      className={`bg-card border rounded-xl p-1.5 flex flex-col transition shadow-sm hover:shadow-md overflow-hidden ${
         isAdded ? "border-primary/60" : ""
       }`}
     >
@@ -130,16 +136,14 @@ export function ItemCard({ item }: { item: Item }) {
         )}
       </div>
 
-      {/* TEXT */}
-      <div className="space-y-0.5 flex-1">
-        <p className="font-semibold text-xs leading-tight line-clamp-2">
+      {/* TEXT — name always reserves 2-line height, category + store below */}
+      <div className="mt-1.5 flex flex-col gap-0.5">
+        <p className="font-semibold text-xs leading-tight line-clamp-2 min-h-[2rem]">
           {item.name}
         </p>
-        {item.category && (
-          <p className="text-xs text-muted-foreground">
-            {categoryLabels[item.category] ?? "📦 Other"}
-          </p>
-        )}
+        <p className="text-xs text-muted-foreground">
+          {categoryLabels[item.category ?? "other"] ?? "📦 Other"}
+        </p>
         <p className="text-xs text-muted-foreground truncate">
           {preferredStore
             ? `📍 ${preferredStore.name}`
@@ -149,8 +153,11 @@ export function ItemCard({ item }: { item: Item }) {
         </p>
       </div>
 
-      {/* ACTIONS */}
-      <div className="flex items-center justify-between gap-1 pt-0.5 overflow-hidden">
+      {/* SPACER — pushes actions to bottom */}
+      <div className="flex-1" />
+
+      {/* ACTIONS — always pinned to bottom */}
+      <div className="flex items-center justify-between gap-1 pt-1 overflow-hidden">
 
         {/* Toggle add/remove */}
         <button
@@ -187,10 +194,13 @@ export function ItemCard({ item }: { item: Item }) {
       </div>
 
       {/* EDIT DIALOG */}
-      <Dialog open={editingItem !== null} onOpenChange={() => setEditingItem(null)}>
+      <Dialog open={editingItem !== null} onOpenChange={() => { setEditingItem(null); setShowAddStore(false); setNewStoreName(""); }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Edit Item</DialogTitle>
+            <DialogDescription>
+              Update the name, photo, category, or preferred store for this item.
+            </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-3">
@@ -266,14 +276,69 @@ export function ItemCard({ item }: { item: Item }) {
 
             <select
               value={editPreferredStore ?? ""}
-              onChange={(e) => setEditPreferredStore(e.target.value ? Number(e.target.value) : undefined)}
+              onChange={(e) => {
+                if (e.target.value === "__add__") {
+                  setShowAddStore(true);
+                } else {
+                  setEditPreferredStore(e.target.value ? Number(e.target.value) : undefined);
+                  setShowAddStore(false);
+                }
+              }}
               className="w-full border border-input bg-background text-foreground rounded-md p-2"
             >
               <option value="">No preferred store</option>
               {stores.map((store) => (
                 <option key={store.id} value={store.id}>{store.name}</option>
               ))}
+              <option value="__add__">＋ Add new store...</option>
             </select>
+
+            {showAddStore && (
+              <div className="flex gap-2">
+                <Input
+                  autoFocus
+                  placeholder="Store name"
+                  value={newStoreName}
+                  onChange={(e) => setNewStoreName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && newStoreName.trim()) {
+                      const id = addStore(newStoreName.trim());
+                      setEditPreferredStore(id);
+                      setNewStoreName("");
+                      setShowAddStore(false);
+                    }
+                    if (e.key === "Escape") {
+                      setShowAddStore(false);
+                      setNewStoreName("");
+                    }
+                  }}
+                  className="h-8 text-sm"
+                />
+                <Button
+                  type="button"
+                  size="sm"
+                  className="h-8 text-xs shrink-0"
+                  onClick={() => {
+                    if (!newStoreName.trim()) return;
+                    const id = addStore(newStoreName.trim());
+                    setEditPreferredStore(id);
+                    setNewStoreName("");
+                    setShowAddStore(false);
+                  }}
+                >
+                  Add
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  className="h-8 text-xs shrink-0"
+                  onClick={() => { setShowAddStore(false); setNewStoreName(""); }}
+                >
+                  Cancel
+                </Button>
+              </div>
+            )}
 
           </div>
 

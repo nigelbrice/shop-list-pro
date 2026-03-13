@@ -88,9 +88,12 @@ export function useSwitchUser() {
       const res = await apiRequest("POST", "/api/auth/switch-user", { userId });
       return res.json() as Promise<AccountUser>;
     },
-    onSuccess: (_, userId) => {
+    onSuccess: (user) => {
+      // Coerce to Number so it always matches the type in users[]
+      // (bigint migration means IDs can come back as strings)
+      const returnedId = Number(user.id);
       queryClient.setQueryData<AuthState | null>(["/api/auth/me"], (old) =>
-        old ? { ...old, activeUserId: userId } : old
+        old ? { ...old, activeUserId: returnedId } : old
       );
     },
   });
