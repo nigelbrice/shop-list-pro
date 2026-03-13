@@ -52,7 +52,12 @@ export function useSync(handlers: SyncHandlers) {
     console.log("[sync] Running full sync...");
 
     try {
-      // Pull all three tables in parallel
+      // Flush FIRST so our pending changes are in Supabase before we
+      // pull. Without this, the first sync after adding items only
+      // sees the other device's data and appears to overwrite local ones.
+      await flushQueue();
+
+      // Pull all three tables — Supabase now has everyone's data
       const [remoteItems, remoteStores, remoteListItems] = await Promise.all([
         pullItems(accountId),
         pullStores(accountId),
@@ -110,11 +115,6 @@ export function useSync(handlers: SyncHandlers) {
 
         onStoreListItemsPulled(merged, itemsById);
       }
-
-      // Flush after pulling — this way our local changes go up
-      // after we've already seen what's in Supabase, so we never
-      // accidentally overwrite fresher data from another device.
-      await flushQueue();
 
       console.log("[sync] Full sync complete.");
 
