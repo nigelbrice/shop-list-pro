@@ -67,21 +67,20 @@ const StoreContext = createContext<StoreContextType | null>(null);
 
 export const aisleOrder: string[] = [
   "produce", "bakery", "meat", "dairy",
-  "chilled", "frozen", "pantry", "beverages", "personal_care", "household", "other"
+  "chilled", "frozen", "pantry", "beverages", "household", "other"
 ];
 
 export const categoryOptions = [
-  { value: "produce",       label: "🥦 Produce" },
-  { value: "bakery",        label: "🍞 Bakery" },
-  { value: "meat",          label: "🥩 Meat" },
-  { value: "dairy",         label: "🥛 Dairy" },
-  { value: "chilled",       label: "🧊 Chilled" },
-  { value: "frozen",        label: "❄ Frozen" },
-  { value: "pantry",        label: "🥫 Pantry" },
-  { value: "beverages",     label: "🍾 Beverages" },
-  { value: "personal_care", label: "🧼 Personal Care" },
-  { value: "household",     label: "🧴 Household" },
-  { value: "other",         label: "📦 Other" },
+  { value: "produce",   label: "🥦 Produce" },
+  { value: "bakery",    label: "🍞 Bakery" },
+  { value: "meat",      label: "🥩 Meat" },
+  { value: "dairy",     label: "🥛 Dairy" },
+  { value: "chilled",   label: "🧊 Chilled" },
+  { value: "frozen",    label: "❄ Frozen" },
+  { value: "pantry",    label: "🥫 Pantry" },
+  { value: "beverages", label: "🍾 Beverages" },
+  { value: "household", label: "🧴 Household" },
+  { value: "other",     label: "📦 Other" },
 ];
 
 const DEFAULT_STORES: Store[] = [
@@ -199,13 +198,10 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         grouped[storeId].push({ ...row, item });
       }
 
-      // Keep stores that had no remote list items (e.g. newly created)
-      for (const storeId in prev) {
-        if (!grouped[storeId]) {
-          grouped[storeId] = prev[storeId];
-        }
-      }
-
+      // Trust Supabase as the source of truth — if a store's list
+      // is empty or missing from the remote pull, that means all
+      // its items have been deleted. Do NOT fall back to local state
+      // or deleted items will never disappear on other devices.
       return grouped;
     });
   }, []);

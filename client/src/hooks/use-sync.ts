@@ -9,12 +9,13 @@ type SyncHandlers = {
   accountId: number;
   onItemsPulled: (items: any[]) => void;
   onStoresPulled: (stores: any[]) => void;
+  // Receives merged flat list + itemsById map so snapshots
+  // can be re-attached even for items from another device.
   onStoreListItemsPulled: (items: any[], itemsById: Map<number, any>) => void;
   getLocalItems: () => any[];
   getLocalStores: () => any[];
+  // Returns grouped StoreLists shape: { [storeId]: StoreListItem[] }
   getLocalStoreListItems: () => any;
-  // When true (shopping list page), sync every 10s instead of 30s
-  fastSync?: boolean;
 };
 
 // =============================================
@@ -30,7 +31,6 @@ export function useSync(handlers: SyncHandlers) {
     getLocalItems,
     getLocalStores,
     getLocalStoreListItems,
-    fastSync = false,
   } = handlers;
 
   const initialSyncDone = useRef(false);
@@ -91,23 +91,24 @@ export function useSync(handlers: SyncHandlers) {
       }
 
       // --- STORE LIST ITEMS ---
-      if (remoteListItems && remoteListItems.length > 0) {
-        // getLocalStoreListItems() returns grouped shape { [storeId]: [] }
-        // mergeRows needs a flat array — flatten it here.
+      // Note: we allow remoteListItems to be empty — if Supabase
+      // returns an empty array it means all items were deleted and
+      // we must clear local state too. Only skip if null (error).
+      if (remoteListItems !== null) {
+        const remoteList = remoteListItems ?? [];
         const localGrouped = getLocalStoreListItems();
         const localFlat: any[] = Object.values(localGrouped).flat();
 
-        // Stamp each local row with its item snapshot so mergeRows
-        // preserves it when the local row wins the timestamp comparison.
-        // Remote rows only carry item_id, not the full item object.
         const localFlatWithSnapshot = localFlat.map((row: any) => ({
           ...row,
           item: row.item ?? { id: Number(row.item_id), name: "Unknown" },
         }));
 
-        const merged = mergeRows(localFlatWithSnapshot, remoteListItems);
-        console.log("[diag] merged store list items:", JSON.stringify(merged.slice(0, 3)));
+        const merged = remoteList.length > 0
+          ? mergeRows(localFlatWithSnapshot, remoteList)
+          : [];
 
+        console.log("[diag] merged store list items:", JSON.stringify(merged.slice(0, 3)));
         onStoreListItemsPulled(merged, itemsById);
       }
 
@@ -155,16 +156,15 @@ export function useSync(handlers: SyncHandlers) {
   }, [runSync]);
 
   // =============================================
-  // PERIODIC SYNC
-  // 10s on shopping list page, 30s elsewhere
+  // PERIODIC SYNC — every 30 seconds
   // =============================================
 
   useEffect(() => {
     const interval = setInterval(() => {
       if (navigator.onLine) runSync();
-    }, fastSync ? 10_000 : 30_000);
+    }, 30_000);
     return () => clearInterval(interval);
-  }, [runSync, fastSync]);
+  }, [runSync]);
 
   return { runSync };
 }
