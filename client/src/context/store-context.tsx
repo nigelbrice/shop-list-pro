@@ -67,20 +67,21 @@ const StoreContext = createContext<StoreContextType | null>(null);
 
 export const aisleOrder: string[] = [
   "produce", "bakery", "meat", "dairy",
-  "chilled", "frozen", "pantry", "beverages", "household", "other"
+  "chilled", "frozen", "pantry", "beverages", "personal_care", "household", "other"
 ];
 
 export const categoryOptions = [
-  { value: "produce",   label: "🥦 Produce" },
-  { value: "bakery",    label: "🍞 Bakery" },
-  { value: "meat",      label: "🥩 Meat" },
-  { value: "dairy",     label: "🥛 Dairy" },
-  { value: "chilled",   label: "🧊 Chilled" },
-  { value: "frozen",    label: "❄ Frozen" },
-  { value: "pantry",    label: "🥫 Pantry" },
-  { value: "beverages", label: "🍾 Beverages" },
-  { value: "household", label: "🧴 Household" },
-  { value: "other",     label: "📦 Other" },
+  { value: "produce",       label: "🥦 Produce" },
+  { value: "bakery",        label: "🍞 Bakery" },
+  { value: "meat",          label: "🥩 Meat" },
+  { value: "dairy",         label: "🥛 Dairy" },
+  { value: "chilled",       label: "🧊 Chilled" },
+  { value: "frozen",        label: "❄ Frozen" },
+  { value: "pantry",        label: "🥫 Pantry" },
+  { value: "beverages",     label: "🍾 Beverages" },
+  { value: "personal_care", label: "🧼 Personal Care" },
+  { value: "household",     label: "🧴 Household" },
+  { value: "other",         label: "📦 Other" },
 ];
 
 const DEFAULT_STORES: Store[] = [

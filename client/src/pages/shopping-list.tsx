@@ -94,16 +94,17 @@ function groupItemsByCategory(items: StoreListItem[]) {
 /* ------------------------------------------------ */
 
 const categoryLabels: Record<string, string> = {
-  produce:   "🥦 Produce",
-  bakery:    "🍞 Bakery",
-  meat:      "🥩 Meat",
-  dairy:     "🥛 Dairy",
-  chilled:   "🧊 Chilled",
-  frozen:    "❄ Frozen",
-  pantry:    "🥫 Pantry",
-  beverages: "🍾 Beverages",
-  household: "🧴 Household",
-  other:     "📦 Other"
+  produce:       "🥦 Produce",
+  bakery:        "🍞 Bakery",
+  meat:          "🥩 Meat",
+  dairy:         "🥛 Dairy",
+  chilled:       "🧊 Chilled",
+  frozen:        "❄ Frozen",
+  pantry:        "🥫 Pantry",
+  beverages:     "🍾 Beverages",
+  personal_care: "🧼 Personal Care",
+  household:     "🧴 Household",
+  other:         "📦 Other"
 };
 
 /* ------------------------------------------------ */
@@ -277,11 +278,27 @@ function SortableCategory({
   return (
     <div ref={setNodeRef} style={style} {...attributes}>
 
-      <div
-        {...listeners}
-        className="text-sm font-bold text-muted-foreground mt-4 mb-2 cursor-grab active:cursor-grabbing"
-      >
-        {categoryLabels[category] ?? "📦 Other"}
+      <div className="flex items-center gap-2 mt-4 mb-2">
+        {/* Drag handle — only this area triggers reordering */}
+        <div
+          {...listeners}
+          className="cursor-grab active:cursor-grabbing p-1 text-muted-foreground/40 hover:text-muted-foreground transition-colors touch-none"
+          aria-label="Drag to reorder category"
+        >
+          {/* 2×3 grid of dots */}
+          <svg width="12" height="16" viewBox="0 0 12 16" fill="currentColor">
+            <circle cx="3" cy="3" r="1.5" />
+            <circle cx="9" cy="3" r="1.5" />
+            <circle cx="3" cy="8" r="1.5" />
+            <circle cx="9" cy="8" r="1.5" />
+            <circle cx="3" cy="13" r="1.5" />
+            <circle cx="9" cy="13" r="1.5" />
+          </svg>
+        </div>
+
+        <span className="text-sm font-bold text-muted-foreground">
+          {categoryLabels[category] ?? "📦 Other"}
+        </span>
       </div>
 
       <div className="space-y-2">
