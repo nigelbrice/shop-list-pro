@@ -9,13 +9,12 @@ type SyncHandlers = {
   accountId: number;
   onItemsPulled: (items: any[]) => void;
   onStoresPulled: (stores: any[]) => void;
-  // Receives merged flat list + itemsById map so snapshots
-  // can be re-attached even for items from another device.
   onStoreListItemsPulled: (items: any[], itemsById: Map<number, any>) => void;
   getLocalItems: () => any[];
   getLocalStores: () => any[];
-  // Returns grouped StoreLists shape: { [storeId]: StoreListItem[] }
   getLocalStoreListItems: () => any;
+  // When true (shopping list page), sync every 10s instead of 30s
+  fastSync?: boolean;
 };
 
 // =============================================
@@ -31,6 +30,7 @@ export function useSync(handlers: SyncHandlers) {
     getLocalItems,
     getLocalStores,
     getLocalStoreListItems,
+    fastSync = false,
   } = handlers;
 
   const initialSyncDone = useRef(false);
@@ -52,12 +52,7 @@ export function useSync(handlers: SyncHandlers) {
     console.log("[sync] Running full sync...");
 
     try {
-      // Flush FIRST so our pending changes are in Supabase before we
-      // pull. Without this, the first sync after adding items only
-      // sees the other device's data and appears to overwrite local ones.
-      await flushQueue();
-
-      // Pull all three tables — Supabase now has everyone's data
+      // Pull all three tables in parallel
       const [remoteItems, remoteStores, remoteListItems] = await Promise.all([
         pullItems(accountId),
         pullStores(accountId),
@@ -116,6 +111,11 @@ export function useSync(handlers: SyncHandlers) {
         onStoreListItemsPulled(merged, itemsById);
       }
 
+      // Flush after pulling — this way our local changes go up
+      // after we've already seen what's in Supabase, so we never
+      // accidentally overwrite fresher data from another device.
+      await flushQueue();
+
       console.log("[sync] Full sync complete.");
 
     } catch (err) {
@@ -155,15 +155,16 @@ export function useSync(handlers: SyncHandlers) {
   }, [runSync]);
 
   // =============================================
-  // PERIODIC SYNC — every 30 seconds
+  // PERIODIC SYNC
+  // 10s on shopping list page, 30s elsewhere
   // =============================================
 
   useEffect(() => {
     const interval = setInterval(() => {
       if (navigator.onLine) runSync();
-    }, 30_000);
+    }, fastSync ? 10_000 : 30_000);
     return () => clearInterval(interval);
-  }, [runSync]);
+  }, [runSync, fastSync]);
 
   return { runSync };
 }

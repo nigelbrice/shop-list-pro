@@ -72,15 +72,13 @@ function SyncBridge({ accountId }: { accountId: number }) {
     setAccountId: setStoreAccountId,
   } = useStoreContext();
 
-  // Pass accountId down into both contexts
-  // so every enqueue call knows which account
-  // to tag the row with.
+  const [location] = useLocation();
+
   useEffect(() => {
     setItemsAccountId(accountId);
     setStoreAccountId(accountId);
   }, [accountId, setItemsAccountId, setStoreAccountId]);
 
-  // Pass raw grouped storeLists — use-sync.ts flattens it internally.
   const getLocalStoreListItems = () => storeLists;
 
   useSync({
@@ -91,6 +89,9 @@ function SyncBridge({ accountId }: { accountId: number }) {
     getLocalItems: () => items,
     getLocalStores: () => stores,
     getLocalStoreListItems,
+    // Use faster sync on shopping list page so ticked items
+    // disappear on other devices within ~10 seconds
+    fastSync: location === "/",
   });
 
   return null;
