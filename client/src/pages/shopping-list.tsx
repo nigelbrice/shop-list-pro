@@ -323,6 +323,7 @@ export default function ShoppingList(){
     stores,
     storeLists,
     deleteStore,
+    removeItemFromStore,
     sortByAisle: aisleSortingEnabled
   } = useStoreContext();
 
@@ -332,6 +333,7 @@ export default function ShoppingList(){
   const [orderedItems,setOrderedItems] = useState<StoreListItem[]>([]);
   const [categoryOrder,setCategoryOrder] = useState<string[]>([]);
   const [confirmDeleteStore, setConfirmDeleteStore] = useState<number | null>(null);
+  const [confirmClearList, setConfirmClearList] = useState(false);
 
   useEffect(() => {
 
@@ -412,7 +414,12 @@ export default function ShoppingList(){
 
   },[selectedStoreId]);
 
-  const selectedStore = stores?.find(s=>s.id===selectedStoreId);
+  const handleClearList = () => {
+    if (!selectedStoreId) return;
+    const items = storeLists[selectedStoreId] || [];
+    items.forEach(item => removeItemFromStore(selectedStoreId, item.id));
+    setConfirmClearList(false);
+  };
 
   const StoreTabs = () => (
 
@@ -470,6 +477,7 @@ export default function ShoppingList(){
   );
 
   const storeToDelete = stores.find(s => s.id === confirmDeleteStore);
+  const selectedStore = stores?.find(s => s.id === selectedStoreId);
 
   return (
 
@@ -501,12 +509,45 @@ export default function ShoppingList(){
         </DialogContent>
       </Dialog>
 
+      {/* CONFIRM CLEAR LIST DIALOG */}
+      <Dialog open={confirmClearList} onOpenChange={setConfirmClearList}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Clear {selectedStore?.name} list?</DialogTitle>
+            <DialogDescription>
+              This will remove all {orderedItems.length} items from the list. Your items in the database won't be affected.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmClearList(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleClearList}>
+              Clear list
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <StoreTabs/>
 
-      <h1 className="text-3xl font-bold flex items-center gap-3">
-        <ShoppingBag className="w-8 h-8 text-primary"/>
-        Shopping List
-      </h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold flex items-center gap-3">
+          <ShoppingBag className="w-8 h-8 text-primary"/>
+          Shopping List
+        </h1>
+        {selectedStoreId && orderedItems.length > 0 && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-destructive border-destructive/40 hover:bg-destructive/10"
+            onClick={() => setConfirmClearList(true)}
+          >
+            <Trash2 className="w-3.5 h-3.5 mr-1.5" />
+            Clear list
+          </Button>
+        )}
+      </div>
 
       {!selectedStoreId && (
         <div className="text-muted-foreground">
