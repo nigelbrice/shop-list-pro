@@ -404,7 +404,7 @@ export function Layout({ children, auth }: { children: React.ReactNode; auth: Au
 
       {/* Footer */}
       <div className="text-xs text-muted-foreground">
-        Shopeeze v1.50
+        Shopeeze v1.51
       </div>
 
     </div>
