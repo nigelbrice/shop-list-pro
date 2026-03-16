@@ -1,6 +1,8 @@
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { enqueue } from "@/lib/supabase-sync";
 
+
+
 // =============================================
 // TYPES
 // =============================================
@@ -25,7 +27,8 @@ type ItemsContextType = {
     name: string,
     category?: string,
     imageUrl?: string,
-    preferredStoreId?: number
+    preferredStoreId?: number,
+    notes?: string
   ) => void;
   deleteItem: (id: number) => void;
   updateItem: (id: number, updates: Partial<Item>) => void;
@@ -124,6 +127,7 @@ export function ItemsProvider({ children }: { children: React.ReactNode }) {
   // -----------------------------------------------
   
   const setItems = useCallback((incoming: Item[]) => {
+    // console.log("[diag] setItems incoming:", JSON.stringify(incoming.slice(0,3)));
     setItemsState((prev) => {
       // Build a map of existing images by id
       const imageMap = new Map(prev.map((i) => [i.id, i.imageUrl]));
@@ -143,7 +147,8 @@ export function ItemsProvider({ children }: { children: React.ReactNode }) {
     name: string,
     category?: string,
     imageUrl?: string,
-    preferredStoreId?: number
+    preferredStoreId?: number,
+    notes?: string
   ) => {
     const now = new Date().toISOString();
     const newItem: Item = {
@@ -151,6 +156,7 @@ export function ItemsProvider({ children }: { children: React.ReactNode }) {
       name: name.trim().replace(/\b\w/g, c => c.toUpperCase()),
       category,
       imageUrl,
+      notes,
       preferredStoreId,
       createdAt: now,
       updated_at: now,

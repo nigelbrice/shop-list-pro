@@ -18,6 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useStoreContext } from "@/context/store-context";
+import { useRegisterSW } from "virtual:pwa-register/react";
 
 function MemberMenu({ auth }: { auth: AuthState }) {
   const [showAddForm, setShowAddForm] = useState(false);
@@ -161,11 +162,37 @@ export function Layout({ children, auth }: { children: React.ReactNode; auth: Au
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   const { addStore } = useStoreContext();
-
-const [showAddStore, setShowAddStore] = useState(false);
-const [newStoreName, setNewStoreName] = useState("");
-
+  const [showAddStore, setShowAddStore] = useState(false);
+  const [newStoreName, setNewStoreName] = useState("");
   const { sortByAisle, setSortByAisle } = useStoreContext();
+
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
+  const [updateStatus, setUpdateStatus] = useState<"idle" | "found" | "latest">("idle");
+  const {
+    needRefresh: [needRefresh],
+    updateServiceWorker,
+  } = useRegisterSW();
+
+  const handleCheckUpdate = async () => {
+    setCheckingUpdate(true);
+    setUpdateStatus("idle");
+    try {
+      const reg = await navigator.serviceWorker.getRegistration();
+      if (reg) await reg.update();
+      setTimeout(() => {
+        setCheckingUpdate(false);
+        if (needRefresh) {
+          setUpdateStatus("found");
+          updateServiceWorker(true);
+        } else {
+          setUpdateStatus("latest");
+        }
+      }, 1500);
+    } catch {
+      setCheckingUpdate(false);
+      setUpdateStatus("latest");
+    }
+  };
 
   const handlePresenceChange = useCallback((count: number) => {
     setOnlineCount(count);
@@ -370,6 +397,22 @@ const [newStoreName, setNewStoreName] = useState("");
           🟢 {onlineCount} users online
         </div>
 
+        <button
+          onClick={handleCheckUpdate}
+          disabled={checkingUpdate}
+          className="flex items-center gap-3 w-full px-3 py-2 rounded-lg hover:bg-secondary text-sm disabled:opacity-50"
+        >
+          {checkingUpdate ? (
+            <><Loader2 className="w-4 h-4 animate-spin" /> Checking...</>
+          ) : updateStatus === "found" ? (
+            <>🔄 Updating...</>
+          ) : updateStatus === "latest" ? (
+            <>✓ Up to date</>
+          ) : (
+            <>🔄 Check for updates</>
+          )}
+        </button>
+
       </div>
 
       {/* Spacer */}
@@ -377,7 +420,7 @@ const [newStoreName, setNewStoreName] = useState("");
 
       {/* Footer */}
       <div className="text-xs text-muted-foreground">
-        Shopeeze v1.47
+        Shopeeze v1.48
       </div>
 
     </div>

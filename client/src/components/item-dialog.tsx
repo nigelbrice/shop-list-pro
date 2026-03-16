@@ -13,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 import { useItems } from "@/context/items-context";
+import { categoryOptions } from "@/lib/categories";
 
 type ItemDialogProps = {
   open: boolean;
@@ -32,6 +33,7 @@ export function ItemDialog({
   const { stores, addStore } = useStoreContext();
 
   const [name, setName] = useState("");
+  const [notes, setNotes] = useState("");
   const [category, setCategory] = useState("other");
   const [preferredStoreId, setPreferredStoreId] = useState<number | undefined>();
   const [imageUrl, setImageUrl] = useState<string | undefined>();
@@ -46,6 +48,7 @@ export function ItemDialog({
   useEffect(() => {
     if (open) {
       setName(defaultName ?? "");
+      setNotes("");
       setImageUrl(defaultImage ?? undefined);
       setCategory("other");
       setPreferredStoreId(undefined);
@@ -56,7 +59,7 @@ export function ItemDialog({
 
   const handleSave = () => {
     if (!name.trim()) return;
-    addItem(name, category, imageUrl, preferredStoreId);
+    addItem(name, category, imageUrl, preferredStoreId, notes || undefined);
     onOpenChange(false);
   };
 
@@ -122,6 +125,14 @@ export function ItemDialog({
             onChange={(e) => setName(e.target.value)}
           />
 
+          <textarea
+            placeholder="Notes (optional) — e.g. brand, size, aisle..."
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            rows={2}
+            className="w-full border border-input rounded-lg px-3 py-2 bg-background text-foreground text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary"
+          />
+
           {/* Category Dropdown */}
           <div className="space-y-2">
             <label className="text-sm font-medium">Category</label>
@@ -130,15 +141,9 @@ export function ItemDialog({
               value={category}
               onChange={(e) => setCategory(e.target.value)}
             >
-              <option value="produce">🥦 Produce</option>
-              <option value="bakery">🍞 Bakery</option>
-              <option value="meat">🥩 Meat</option>
-              <option value="dairy">🥛 Dairy</option>
-              <option value="chilled">🧊 Chilled</option>
-              <option value="frozen">❄ Frozen</option>
-              <option value="pantry">🥫 Pantry</option>
-              <option value="household">🧴 Household</option>
-              <option value="other">📦 Other</option>
+              {categoryOptions.map(({ value, label }) => (
+                <option key={value} value={value}>{label}</option>
+              ))}
             </select>
           </div>
 
