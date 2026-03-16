@@ -27,8 +27,7 @@ type ItemsContextType = {
     name: string,
     category?: string,
     imageUrl?: string,
-    preferredStoreId?: number,
-    notes?: string
+    preferredStoreId?: number
   ) => void;
   deleteItem: (id: number) => void;
   updateItem: (id: number, updates: Partial<Item>) => void;
@@ -147,16 +146,14 @@ export function ItemsProvider({ children }: { children: React.ReactNode }) {
     name: string,
     category?: string,
     imageUrl?: string,
-    preferredStoreId?: number,
-    notes?: string
+    preferredStoreId?: number
   ) => {
     const now = new Date().toISOString();
     const newItem: Item = {
       id: Date.now(),
-      name: name.trim().replace(/\b\w/g, c => c.toUpperCase()),
+      name: name.trim().toLowerCase().replace(/\b\w/g, c => c.toUpperCase()),
       category,
       imageUrl,
-      notes,
       preferredStoreId,
       createdAt: now,
       updated_at: now,

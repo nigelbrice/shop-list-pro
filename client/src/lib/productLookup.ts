@@ -20,8 +20,12 @@ export async function lookupBarcode(barcode: string) {
 
   const product = data.product;
 
-  // product_name can be empty string for some products
-  const name = product.product_name?.trim() || null;
+  // Normalise casing — barcode names are often ALL CAPS
+  const name = product.product_name
+    ?.trim()
+    .toLowerCase()
+    .replace(/\b\w/g, (c: string) => c.toUpperCase())
+    || null;
   if (!name) return null;
 
   return {
