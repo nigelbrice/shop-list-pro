@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { enqueue } from "@/lib/supabase-sync";
-import { categoryOptions, aisleOrder } from "@/lib/categories";
+import { aisleOrder } from "@/lib/categories";
 export { aisleOrder };
 
 // =============================================
@@ -54,7 +54,7 @@ type StoreContextType = {
   addItemToStore: (storeId: number, item: any, addedByUserId?: number, addedByName?: string) => void;
   removeItemFromStore: (storeId: number, listItemId: number) => void;
   updateItemQuantity: (storeId: number, listItemId: number, quantity: number) => void;
-  toggleItemCompleted: (storeId: number, listItemId: number) => void;
+  // toggleItemCompleted: (storeId: number, listItemId: number) => void; // unused — tick removes item directly
   syncItemDetails: (itemId: number, updates: { name?: string; imageUrl?: string; category?: string; notes?: string }) => void;
 
   // Called by useSync after pulling from Supabase
@@ -385,8 +385,11 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   }, [accountId]);
 
   // -----------------------------------------------
-  // TOGGLE COMPLETED
+  // TOGGLE COMPLETED (unused — tick button calls
+  // removeItemFromStore directly. Kept in case
+  // a "completed" state is needed in future.)
   // -----------------------------------------------
+  /*
   const toggleItemCompleted = useCallback((storeId: number, listItemId: number) => {
     const now = new Date().toISOString();
 
@@ -418,6 +421,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       return { ...prev, [storeId]: updated };
     });
   }, [accountId]);
+  */
 
   // -----------------------------------------------
   // SYNC ITEM DETAILS
@@ -456,7 +460,6 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
       addItemToStore,
       removeItemFromStore,
       updateItemQuantity,
-      toggleItemCompleted,
       syncItemDetails,
       setStores,
       setStoreListItems,

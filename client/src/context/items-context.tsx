@@ -1,8 +1,6 @@
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { enqueue } from "@/lib/supabase-sync";
 
-
-
 // =============================================
 // TYPES
 // =============================================
@@ -126,7 +124,6 @@ export function ItemsProvider({ children }: { children: React.ReactNode }) {
   // -----------------------------------------------
   
   const setItems = useCallback((incoming: Item[]) => {
-    // console.log("[diag] setItems incoming:", JSON.stringify(incoming.slice(0,3)));
     setItemsState((prev) => {
       // Build a map of existing images by id
       const imageMap = new Map(prev.map((i) => [i.id, i.imageUrl]));
