@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useStoreContext } from "@/context/store-context";
-import { useRegisterSW } from "virtual:pwa-register/react";
+import { pwaCheckRef } from "@/components/pwa-update";
 
 function MemberMenu({ auth }: { auth: AuthState }) {
   const [showAddForm, setShowAddForm] = useState(false);
@@ -167,31 +167,19 @@ export function Layout({ children, auth }: { children: React.ReactNode; auth: Au
   const { sortByAisle, setSortByAisle } = useStoreContext();
 
   const [checkingUpdate, setCheckingUpdate] = useState(false);
-  const [updateStatus, setUpdateStatus] = useState<"idle" | "found" | "latest">("idle");
-  const {
-    needRefresh: [needRefresh],
-    updateServiceWorker,
-  } = useRegisterSW();
+  const [updateStatus, setUpdateStatus] = useState<"idle" | "latest">("idle");
 
   const handleCheckUpdate = async () => {
     setCheckingUpdate(true);
     setUpdateStatus("idle");
-    try {
-      const reg = await navigator.serviceWorker.getRegistration();
-      if (reg) await reg.update();
-      setTimeout(() => {
-        setCheckingUpdate(false);
-        if (needRefresh) {
-          setUpdateStatus("found");
-          updateServiceWorker(true);
-        } else {
-          setUpdateStatus("latest");
-        }
-      }, 1500);
-    } catch {
+    await pwaCheckRef.check();
+    // Give the service worker a moment to activate and reload.
+    // If a new version was found, controllerchange fires and
+    // reloads automatically. If not, show "Up to date" after 3s.
+    setTimeout(() => {
       setCheckingUpdate(false);
       setUpdateStatus("latest");
-    }
+    }, 3000);
   };
 
   const handlePresenceChange = useCallback((count: number) => {
@@ -402,15 +390,11 @@ export function Layout({ children, auth }: { children: React.ReactNode; auth: Au
           disabled={checkingUpdate}
           className="flex items-center gap-3 w-full px-3 py-2 rounded-lg hover:bg-secondary text-sm disabled:opacity-50"
         >
-          {checkingUpdate ? (
-            <><Loader2 className="w-4 h-4 animate-spin" /> Checking...</>
-          ) : updateStatus === "found" ? (
-            <>🔄 Updating...</>
-          ) : updateStatus === "latest" ? (
-            <>✓ Up to date</>
-          ) : (
-            <>🔄 Check for updates</>
-          )}
+          {checkingUpdate
+            ? <><Loader2 className="w-4 h-4 animate-spin" /> Checking...</>
+            : updateStatus === "latest"
+            ? <>✓ Up to date</>
+            : <>🔄 Check for updates</>}
         </button>
 
       </div>
@@ -420,7 +404,7 @@ export function Layout({ children, auth }: { children: React.ReactNode; auth: Au
 
       {/* Footer */}
       <div className="text-xs text-muted-foreground">
-        Shopeeze v1.49
+        Shopeeze v1.50
       </div>
 
     </div>
