@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
-import { enqueue } from "@/lib/supabase-sync";
+import { enqueue, getQueue } from "@/lib/supabase-sync";
+import { mergeRows } from "@/lib/supabase-sync";
 import { aisleOrder } from "@/lib/categories";
 export { aisleOrder };
 
@@ -140,11 +141,46 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
   // -----------------------------------------------
   // setStores — called by useSync after a pull.
-  // Merges remote stores into local state.
+  // Merges remote stores into local state so local-
+  // only stores (e.g. added offline or before auth)
+  // are never wiped by a Supabase pull.
   // -----------------------------------------------
   const setStores = useCallback((incoming: Store[]) => {
-    setStoresState(incoming);
+    setStoresState((prev) => mergeRows(prev, incoming));
   }, []);
+
+  // -----------------------------------------------
+  // SYNC UNSYNCED STORES
+  // When accountId becomes available, push any local
+  // stores that have no account_id (default stores or
+  // stores added before auth loaded) up to Supabase.
+  // -----------------------------------------------
+  useEffect(() => {
+    if (!accountId) return;
+    const now = new Date().toISOString();
+    const pendingIds = new Set(
+      getQueue()
+        .filter(op => op.table === "stores")
+        .map(op => Number(op.payload?.id))
+    );
+
+    stores.forEach((store) => {
+      // Skip if already has account_id or already queued
+      if (store.account_id || pendingIds.has(store.id)) return;
+      enqueue({
+        table: "stores",
+        action: "upsert",
+        accountId,
+        payload: {
+          id: store.id,
+          account_id: accountId,
+          name: store.name,
+          updated_at: store.updated_at ?? now,
+        },
+      });
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accountId]);
 
   // -----------------------------------------------
   // setStoreListItems — called by useSync after a pull.
