@@ -1,5 +1,5 @@
 import { useEffect, useRef, useCallback } from "react";
-import { flushQueue, pullItems, pullStores, pullStoreListItems, mergeRows } from "@/lib/supabase-sync";
+import { flushQueue, pullItems, pullStores, pullStoreListItems, mergeRows, getQueue } from "@/lib/supabase-sync";
 
 // =============================================
 // TYPES
@@ -16,6 +16,8 @@ type SyncHandlers = {
   getLocalStores: () => any[];
   // Returns grouped StoreLists shape: { [storeId]: StoreListItem[] }
   getLocalStoreListItems: () => any;
+  // When true (shopping list page), sync every 10s instead of 30s
+  fastSync?: boolean;
 };
 
 // =============================================
@@ -31,6 +33,7 @@ export function useSync(handlers: SyncHandlers) {
     getLocalItems,
     getLocalStores,
     getLocalStoreListItems,
+    fastSync = false,
   } = handlers;
 
   const initialSyncDone = useRef(false);
@@ -52,6 +55,12 @@ export function useSync(handlers: SyncHandlers) {
     console.log("[sync] Running full sync...");
 
     try {
+      // Build set of IDs that are pending sync so mergeRows knows
+      // not to drop them even if they're missing from remote yet.
+      const pendingIds = new Set(
+        getQueue().map(op => Number(op.payload?.id)).filter(Boolean)
+      );
+
       // Pull all three tables in parallel
       const [remoteItems, remoteStores, remoteListItems] = await Promise.all([
         pullItems(accountId),
@@ -59,41 +68,27 @@ export function useSync(handlers: SyncHandlers) {
         pullStoreListItems(accountId),
       ]);
 
-      // ---- DIAGNOSTIC LOGS (remove after testing) ----
-      console.log("[diag] remoteItems:", JSON.stringify(remoteItems?.slice(0, 3)));
-      console.log("[diag] remoteListItems:", JSON.stringify(remoteListItems?.slice(0, 3)));
-      console.log("[diag] localItems:", JSON.stringify(getLocalItems().slice(0, 3)));
-      const localGroupedDiag = getLocalStoreListItems();
-      const localFlatDiag: any[] = Object.values(localGroupedDiag).flat();
-      console.log("[diag] localStoreListItems (flat):", JSON.stringify(localFlatDiag.slice(0, 3)));
-      // -------------------------------------------------
-
       // --- ITEMS ---
-      // Merge first so we can build itemsById for snapshot lookup below.
       let mergedItems: any[] = getLocalItems();
       if (remoteItems && remoteItems.length > 0) {
-        mergedItems = mergeRows(getLocalItems(), remoteItems);
+        mergedItems = mergeRows(getLocalItems(), remoteItems, pendingIds);
         onItemsPulled(mergedItems);
       }
 
       // Build id → item lookup from the fully merged items list.
-      // This lets setStoreListItems resolve name/category even for
-      // items that were added on a different device.
       const itemsById = new Map<number, any>(
         mergedItems.map((item: any) => [Number(item.id), item])
       );
-      console.log("[diag] itemsById keys:", Array.from(itemsById.keys()));
 
       // --- STORES ---
       if (remoteStores && remoteStores.length > 0) {
-        const merged = mergeRows(getLocalStores(), remoteStores);
+        const merged = mergeRows(getLocalStores(), remoteStores, pendingIds);
         onStoresPulled(merged);
       }
 
       // --- STORE LIST ITEMS ---
-      // Note: we allow remoteListItems to be empty — if Supabase
-      // returns an empty array it means all items were deleted and
-      // we must clear local state too. Only skip if null (error).
+      // Allow empty remote — means all items deleted on another device.
+      // Only skip entirely if null (a Supabase error occurred).
       if (remoteListItems !== null) {
         const remoteList = remoteListItems ?? [];
         const localGrouped = getLocalStoreListItems();
@@ -105,16 +100,14 @@ export function useSync(handlers: SyncHandlers) {
         }));
 
         const merged = remoteList.length > 0
-          ? mergeRows(localFlatWithSnapshot, remoteList)
+          ? mergeRows(localFlatWithSnapshot, remoteList, pendingIds)
           : [];
 
-        console.log("[diag] merged store list items:", JSON.stringify(merged.slice(0, 3)));
         onStoreListItemsPulled(merged, itemsById);
       }
 
-      // Flush after pulling — this way our local changes go up
-      // after we've already seen what's in Supabase, so we never
-      // accidentally overwrite fresher data from another device.
+      // Flush after pulling so we don't overwrite remote data
+      // with stale local changes before seeing what's there.
       await flushQueue();
 
       console.log("[sync] Full sync complete.");
@@ -156,15 +149,16 @@ export function useSync(handlers: SyncHandlers) {
   }, [runSync]);
 
   // =============================================
-  // PERIODIC SYNC — every 30 seconds
+  // PERIODIC SYNC
+  // 10s on shopping list page, 30s elsewhere
   // =============================================
 
   useEffect(() => {
     const interval = setInterval(() => {
       if (navigator.onLine) runSync();
-    }, 30_000);
+    }, fastSync ? 10_000 : 30_000);
     return () => clearInterval(interval);
-  }, [runSync]);
+  }, [runSync, fastSync]);
 
   return { runSync };
 }

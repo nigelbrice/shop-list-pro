@@ -166,24 +166,38 @@ export async function pullStoreListItems(accountId: number) {
 
 export function mergeRows<T extends { id: number | string; updated_at?: string }>(
   local: T[],
-  remote: T[]
+  remote: T[],
+  pendingIds?: Set<number>
 ): T[] {
   const merged = new Map<number, T>();
+  const remoteIds = new Set(remote.map(r => Number(r.id)));
 
   // Always coerce id to number — Supabase returns bigint columns
   // as strings, but local state stores them as numbers. Without
   // this, the same row gets two Map entries and remote always wins,
   // wiping out the local item snapshot (name, category etc.).
   for (const row of local) {
-    merged.set(Number(row.id), row);
+    const id = Number(row.id);
+    // Only keep local-only rows if they have a pending sync op.
+    // If they're not pending and not in remote, they were deleted
+    // on another device and should be removed locally too.
+    if (!remoteIds.has(id)) {
+      if (pendingIds?.has(id)) {
+        merged.set(id, row); // keep — not yet pushed to Supabase
+      }
+      // else: drop — deleted on another device
+    } else {
+      merged.set(id, row);
+    }
   }
 
   for (const row of remote) {
-    const existing = merged.get(Number(row.id));
+    const id = Number(row.id);
+    const existing = merged.get(id);
 
     if (!existing) {
       // New row from another device — add it
-      merged.set(Number(row.id), { ...row, id: Number(row.id) } as any);
+      merged.set(id, { ...row, id } as any);
     } else {
       const localTime = new Date(existing.updated_at ?? 0).getTime();
       const remoteTime = new Date(row.updated_at ?? 0).getTime();
@@ -191,9 +205,9 @@ export function mergeRows<T extends { id: number | string; updated_at?: string }
       if (remoteTime > localTime) {
         // Remote is newer — use it but preserve local imageUrl
         // and item snapshot since those aren't stored in Supabase.
-        merged.set(Number(row.id), {
+        merged.set(id, {
           ...row,
-          id: Number(row.id),
+          id,
           imageUrl: (existing as any).imageUrl ?? (row as any).imageUrl,
           item: (existing as any).item ?? (row as any).item,
         } as any);
