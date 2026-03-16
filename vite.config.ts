@@ -13,7 +13,7 @@ export default defineConfig({
 
     VitePWA({
       strategies: "generateSW",
-      registerType: "autoUpdate",
+      registerType: "prompt",
 
       includeAssets: ["icon-192.png", "icon-512.png"],
 
