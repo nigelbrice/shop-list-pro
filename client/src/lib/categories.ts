@@ -15,6 +15,8 @@ export type CategoryKey =
   | "beverages"
   | "personal_care"
   | "household"
+  | "dogs"
+  | "hot_drinks"
   | "other";
 
 // Display labels (emoji + name) used in dropdowns, filter pills, list headers
@@ -29,6 +31,8 @@ export const categoryLabels: Record<CategoryKey, string> = {
   beverages:     "🍾 Beverages",
   personal_care: "🧼 Personal Care",
   household:     "🧴 Household",
+  dogs:          "🦴 Dogs",
+  hot_drinks:    "☕ Hot Drinks",
   other:         "📦 Other",
 };
 
@@ -44,6 +48,8 @@ export const categoryIcons: Record<CategoryKey, string> = {
   beverages:     "🍾",
   personal_care: "🧼",
   household:     "🧴",
+  dogs:          "🦴",
+  hot_drinks:    "☕",
   other:         "📦",
 };
 
@@ -59,6 +65,8 @@ export const aisleOrder: CategoryKey[] = [
   "beverages",
   "personal_care",
   "household",
+  "dogs",
+  "hot_drinks",
   "other",
 ];
 
