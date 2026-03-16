@@ -22,6 +22,7 @@ type Item = {
   name: string;
   category?: string;
   imageUrl?: string;
+  notes?: string;
   preferredStoreId?: number;
 };
 
@@ -37,6 +38,7 @@ export function ItemCard({ item }: { item: Item }) {
   const [editName, setEditName] = useState("");
   const [editImage, setEditImage] = useState("");
   const [editCategory, setEditCategory] = useState("");
+  const [editNotes, setEditNotes] = useState("");
   const [editPreferredStore, setEditPreferredStore] = useState<number | undefined>(undefined);
   const [showAddStore, setShowAddStore] = useState(false);
   const [newStoreName, setNewStoreName] = useState("");
@@ -48,6 +50,7 @@ export function ItemCard({ item }: { item: Item }) {
     setEditName(item.name);
     setEditImage(item.imageUrl ?? "");
     setEditCategory(item.category ?? "other");
+    setEditNotes(item.notes ?? "");
     setEditPreferredStore(item.preferredStoreId);
     setTimeout(() => nameInputRef.current?.focus(), 50);
   }
@@ -58,13 +61,15 @@ export function ItemCard({ item }: { item: Item }) {
       name: editName,
       category: editCategory,
       imageUrl: editImage,
+      notes: editNotes,
       preferredStoreId: editPreferredStore
     };
     updateItem(editingItem.id, updates);
     syncItemDetails(editingItem.id, {
       name: editName,
       imageUrl: editImage,
-      category: editCategory
+      category: editCategory,
+      notes: editNotes,
     });
     setEditingItem(null);
   }
@@ -121,6 +126,11 @@ export function ItemCard({ item }: { item: Item }) {
         <p className="text-xs text-muted-foreground">
           {categoryLabels[item.category ?? "other"] ?? "📦 Other"}
         </p>
+        {item.notes && (
+          <p className="text-xs text-muted-foreground italic line-clamp-2">
+            {item.notes}
+          </p>
+        )}
         <p className="text-xs text-muted-foreground truncate">
           {preferredStore
             ? `📍 ${preferredStore.name}`
@@ -187,6 +197,14 @@ export function ItemCard({ item }: { item: Item }) {
               value={editName}
               onChange={(e) => setEditName(e.target.value)}
               placeholder="Item name"
+            />
+
+            <textarea
+              value={editNotes}
+              onChange={(e) => setEditNotes(e.target.value)}
+              placeholder="Notes (optional) — e.g. brand, size, aisle..."
+              rows={2}
+              className="w-full border border-input bg-background text-foreground rounded-md p-2 text-sm resize-none"
             />
 
             <div className="space-y-3">

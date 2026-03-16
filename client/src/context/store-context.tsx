@@ -28,6 +28,7 @@ export type StoreListItem = {
     name: string;
     imageUrl?: string;
     category?: string;
+    notes?: string;
   };
 };
 
@@ -54,7 +55,7 @@ type StoreContextType = {
   removeItemFromStore: (storeId: number, listItemId: number) => void;
   updateItemQuantity: (storeId: number, listItemId: number, quantity: number) => void;
   toggleItemCompleted: (storeId: number, listItemId: number) => void;
-  syncItemDetails: (itemId: number, updates: { name?: string; imageUrl?: string; category?: string }) => void;
+  syncItemDetails: (itemId: number, updates: { name?: string; imageUrl?: string; category?: string; notes?: string }) => void;
 
   // Called by useSync after pulling from Supabase
   setStores: (stores: Store[]) => void;
@@ -175,7 +176,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
         // Prefer: fully synced items table → local snapshot → fallback
         const itemDetail = itemsById?.get(itemId);
         const item = itemDetail
-          ? { id: itemId, name: itemDetail.name, category: itemDetail.category, imageUrl: existing?.item?.imageUrl ?? itemDetail.imageUrl }
+          ? { id: itemId, name: itemDetail.name, category: itemDetail.category, notes: itemDetail.notes, imageUrl: existing?.item?.imageUrl ?? itemDetail.imageUrl }
           : existing?.item
           ?? { id: itemId, name: "Unknown" };
 
@@ -299,6 +300,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
           name: item.name,
           imageUrl: item.imageUrl,
           category: item.category,
+          notes: item.notes,
         },
       };
 
@@ -424,7 +426,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   // -----------------------------------------------
   const syncItemDetails = useCallback((
     itemId: number,
-    updates: { name?: string; imageUrl?: string; category?: string }
+    updates: { name?: string; imageUrl?: string; category?: string; notes?: string }
   ) => {
     setStoreListsState((prev) => {
       const next = { ...prev };

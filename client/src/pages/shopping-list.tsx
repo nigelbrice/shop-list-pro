@@ -58,6 +58,7 @@ type StoreListItem = {
     name: string;
     imageUrl?: string;
     category?: string;
+    notes?: string;
   };
 };
 
@@ -143,7 +144,6 @@ function StoreListRow({ listItem, showAddedBy }: { listItem: StoreListItem; show
       <div className="bg-card rounded-2xl border border-border/40 flex items-center justify-between p-4 shadow-sm">
 
         {/* LEFT */}
-
         <div className="flex items-center gap-4 flex-1">
 
           <Button
@@ -161,9 +161,9 @@ function StoreListRow({ listItem, showAddedBy }: { listItem: StoreListItem; show
             <h3 className="text-lg sm:text-xl font-semibold">
               {listItem.item?.name}
             </h3>
-            {showAddedBy && listItem.added_by_name && (
-              <span className="text-xs text-muted-foreground">
-                Added by: {listItem.added_by_name}
+            {listItem.item?.notes && (
+              <span className="text-xs text-muted-foreground italic">
+                {listItem.item.notes}
               </span>
             )}
           </div>
@@ -186,44 +186,50 @@ function StoreListRow({ listItem, showAddedBy }: { listItem: StoreListItem; show
 
         </div>
 
-        {/* RIGHT – MOBILE FRIENDLY QUANTITY CONTROL */}
+        {/* RIGHT – QUANTITY + ADDED BY */}
+        <div className="flex flex-col items-end gap-1">
+          <div className="flex items-center gap-1 bg-secondary/40 rounded-xl px-2 py-1">
 
-        <div className="flex items-center gap-1 bg-secondary/40 rounded-xl px-2 py-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() =>
+                updateItemQuantity(
+                  selectedStoreId!,
+                  listItem.id,
+                  listItem.quantity - 1
+                )
+              }
+            >
+              -
+            </Button>
 
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            onClick={() =>
-              updateItemQuantity(
-                selectedStoreId!,
-                listItem.id,
-                listItem.quantity - 1
-              )
-            }
-          >
-            -
-          </Button>
+            <span className="w-6 text-center text-sm font-semibold">
+              {listItem.quantity}
+            </span>
 
-          <span className="w-6 text-center text-sm font-semibold">
-            {listItem.quantity}
-          </span>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8"
+              onClick={() =>
+                updateItemQuantity(
+                  selectedStoreId!,
+                  listItem.id,
+                  listItem.quantity + 1
+                )
+              }
+            >
+              +
+            </Button>
 
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8"
-            onClick={() =>
-              updateItemQuantity(
-                selectedStoreId!,
-                listItem.id,
-                listItem.quantity + 1
-              )
-            }
-          >
-            +
-          </Button>
-
+          </div>
+          {showAddedBy && listItem.added_by_name && (
+            <span className="text-xs text-muted-foreground">
+              Added by: {listItem.added_by_name}
+            </span>
+          )}
         </div>
 
       </div>
