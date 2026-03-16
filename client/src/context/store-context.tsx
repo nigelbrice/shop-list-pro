@@ -1,5 +1,7 @@
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { enqueue } from "@/lib/supabase-sync";
+import { categoryOptions, aisleOrder } from "@/lib/categories";
+export { aisleOrder };
 
 // =============================================
 // TYPES
@@ -64,24 +66,6 @@ const StoreContext = createContext<StoreContextType | null>(null);
 // =============================================
 // AISLE ORDER + CATEGORY OPTIONS
 // =============================================
-
-export const aisleOrder: string[] = [
-  "produce", "bakery", "meat", "dairy",
-  "chilled", "frozen", "pantry", "beverages", "household", "other"
-];
-
-export const categoryOptions = [
-  { value: "produce",   label: "🥦 Produce" },
-  { value: "bakery",    label: "🍞 Bakery" },
-  { value: "meat",      label: "🥩 Meat" },
-  { value: "dairy",     label: "🥛 Dairy" },
-  { value: "chilled",   label: "🧊 Chilled" },
-  { value: "frozen",    label: "❄ Frozen" },
-  { value: "pantry",    label: "🥫 Pantry" },
-  { value: "beverages", label: "🍾 Beverages" },
-  { value: "household", label: "🧴 Household" },
-  { value: "other",     label: "📦 Other" },
-];
 
 const DEFAULT_STORES: Store[] = [
   { id: 1, name: "Tesco", itemCount: 0 },

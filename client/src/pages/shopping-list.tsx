@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useStoreContext, aisleOrder } from "@/context/store-context";
+import { useStoreContext } from "@/context/store-context";
 import { useAuth } from "@/hooks/use-auth";
 
 import {
@@ -41,6 +41,7 @@ import {
 } from "@dnd-kit/sortable";
 
 import { CSS } from "@dnd-kit/utilities";
+import { categoryLabels, aisleOrder } from "@/lib/categories";
 
 /* ------------------------------------------------ */
 /* TYPES                                            */
@@ -88,24 +89,6 @@ function groupItemsByCategory(items: StoreListItem[]) {
 
   return groups;
 }
-
-/* ------------------------------------------------ */
-/* CATEGORY LABELS                                  */
-/* ------------------------------------------------ */
-
-const categoryLabels: Record<string, string> = {
-  produce:       "🥦 Produce",
-  bakery:        "🍞 Bakery",
-  meat:          "🥩 Meat",
-  dairy:         "🥛 Dairy",
-  chilled:       "🧊 Chilled",
-  frozen:        "❄ Frozen",
-  pantry:        "🥫 Pantry",
-  beverages:     "🍾 Beverages",
-  personal_care: "🧼 Personal Care",
-  household:     "🧴 Household",
-  other:         "📦 Other"
-};
 
 /* ------------------------------------------------ */
 /* STORE LIST ROW                                   */

@@ -102,6 +102,10 @@ export function ItemsProvider({ children }: { children: React.ReactNode }) {
   // SAVE to localStorage whenever items change.
   // Images are stored separately to avoid quota
   // errors with large base64 strings.
+  // Only save an image when we actually have one —
+  // never remove an existing image just because the
+  // current state has imageUrl undefined (e.g. after
+  // a Supabase sync where images aren't stored).
   // -----------------------------------------------
   useEffect(() => {
     const itemsWithoutImages = items.map(({ imageUrl, ...rest }) => rest);
@@ -110,7 +114,9 @@ export function ItemsProvider({ children }: { children: React.ReactNode }) {
     } catch (err) {
       console.warn("Could not save items:", err);
     }
-    items.forEach((item) => saveImage(item.id, item.imageUrl));
+    items.forEach((item) => {
+      if (item.imageUrl) saveImage(item.id, item.imageUrl);
+    });
   }, [items]);
 
   // -----------------------------------------------
