@@ -6,13 +6,14 @@
 
 export type CategoryKey =
   | "produce"
+  | "cold_drinks"
   | "bakery"
   | "meat"
   | "dairy"
   | "chilled"
   | "frozen"
   | "pantry"
-  | "beverages"
+  | "alcohol"
   | "personal_care"
   | "household"
   | "dogs"
@@ -22,13 +23,14 @@ export type CategoryKey =
 // Display labels (emoji + name) used in dropdowns, filter pills, list headers
 export const categoryLabels: Record<CategoryKey, string> = {
   produce:       "🥦 Produce",
+  cold_drinks:   "🥤 Cold Dinks",
   bakery:        "🍞 Bakery",
   meat:          "🥩 Meat",
   dairy:         "🥛 Dairy",
   chilled:       "🧊 Chilled",
   frozen:        "❄ Frozen",
   pantry:        "🥫 Pantry",
-  beverages:     "🍾 Beverages",
+  alcohol:       "🍾 Alcohol",
   personal_care: "🧼 Personal Care",
   household:     "🧴 Household",
   dogs:          "🦴 Dogs",
@@ -39,13 +41,14 @@ export const categoryLabels: Record<CategoryKey, string> = {
 // Single emoji icons used on item cards when no photo is set
 export const categoryIcons: Record<CategoryKey, string> = {
   produce:       "🥦",
+  cold_drinks:   "🥤",
   bakery:        "🍞",
   meat:          "🥩",
   dairy:         "🥛",
   chilled:       "🧊",
   frozen:        "❄️",
   pantry:        "🥫",
-  beverages:     "🍾",
+  alcohol:       "🍾",
   personal_care: "🧼",
   household:     "🧴",
   dogs:          "🦴",
@@ -56,18 +59,19 @@ export const categoryIcons: Record<CategoryKey, string> = {
 // Aisle order for sort-by-aisle feature
 export const aisleOrder: CategoryKey[] = [
   "produce",
-  "bakery",
-  "meat",
-  "dairy",
   "chilled",
-  "frozen",
-  "pantry",
-  "beverages",
+  "cold_drinks",
+  "alcohol",
   "personal_care",
-  "household",
-  "dogs",
+  "pantry",
   "hot_drinks",
-  "other",
+  "household",
+  "bakery",
+  "dogs",
+  "dairy",
+  "meat",
+  "frozen",
+  "other",  
 ];
 
 // Options array for select dropdowns
