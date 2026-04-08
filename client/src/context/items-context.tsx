@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { enqueue } from "@/lib/supabase-sync";
-
+import { generateTempId } from "@/lib/idGenerator";
 
 
 // =============================================
@@ -150,7 +150,7 @@ export function ItemsProvider({ children }: { children: React.ReactNode }) {
   ) => {
     const now = new Date().toISOString();
     const newItem: Item = {
-      id: Date.now(),
+      id: generateTempId(),
       name: name.trim().toLowerCase().replace(/\b\w/g, c => c.toUpperCase()),
       category,
       imageUrl,

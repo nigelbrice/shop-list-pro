@@ -6,6 +6,8 @@ import { Pool } from "pg";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
+import recipeRoutes from './routes/recipes.js';
+import extractRecipeRoute from './routes/extract-recipe.js';
 
 const app = express();
 const httpServer = createServer(app);
@@ -82,6 +84,10 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Add recipe routes BEFORE registerRoutes (so they're registered with session middleware)
+  app.use('/api/recipes', recipeRoutes);
+  app.use('/api/extract-recipe', extractRecipeRoute);
+
   await registerRoutes(httpServer, app);
 
   app.use((err: any, _req: Request, res: Response, next: NextFunction) => {
@@ -104,9 +110,9 @@ app.use((req, res, next) => {
     await setupVite(httpServer, app);
   }
 
-const port = parseInt(process.env.PORT || "5000", 10);
+  const port = parseInt(process.env.PORT || "5000", 10);
 
-httpServer.listen(port, "0.0.0.0", () => {
-  console.log(`Server running on port ${port}`);
-});
+  httpServer.listen(port, "0.0.0.0", () => {
+    console.log(`Server running on port ${port}`);
+  });
 })();

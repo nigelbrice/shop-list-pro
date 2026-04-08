@@ -189,9 +189,10 @@ export function Layout({ children, auth }: { children: React.ReactNode; auth: Au
   useRealtime(handlePresenceChange);
 
   const navItems = [
-    { href: "/", label: "Lists", icon: "📋" },
-    { href: "/database", label: "Database", icon: "🗄" },
-  ];
+  { href: "/", label: "Lists", icon: "📋" },
+  { href: "/database", label: "Database", icon: "🗄" },
+  { href: "/recipes", label: "Recipes", icon: "🍳" },  // ADD THIS LINE
+];
 
   const navigate = (path: string) => {
     setLocation(path);
@@ -404,7 +405,7 @@ export function Layout({ children, auth }: { children: React.ReactNode; auth: Au
 
       {/* Footer */}
       <div className="text-xs text-muted-foreground">
-        Shopeeze v1.53
+        Shopeeze v1.54
       </div>
 
     </div>

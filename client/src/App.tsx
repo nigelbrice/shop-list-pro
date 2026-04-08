@@ -19,6 +19,10 @@ import NotFound from "@/pages/not-found";
 import ShoppingList from "@/pages/shopping-list";
 import Database from "@/pages/database";
 import Login from "@/pages/login";
+import RecipeList from './pages/RecipeList';
+import AddRecipe from './pages/AddRecipe';
+import RecipeDetail from './pages/RecipeDetail';
+import EditRecipe from './pages/EditRecipe';
 
 // =============================================
 // NETWORK STATUS BANNER
@@ -126,6 +130,10 @@ function AppInner() {
       <Switch>
         <Route path="/" component={ShoppingList} />
         <Route path="/database" component={Database} />
+        <Route path="/recipes" component={RecipeList} />
+        <Route path="/recipes/new" component={AddRecipe} />
+        <Route path="/recipes/:id/edit" component={EditRecipe} />
+        <Route path="/recipes/:id" component={RecipeDetail} />
         <Route component={NotFound} />
       </Switch>
 

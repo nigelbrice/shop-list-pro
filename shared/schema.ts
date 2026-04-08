@@ -44,6 +44,65 @@ export const storeListItems = pgTable("store_list_items", {
   listOrder: integer("list_order"),
 });
 
+// server/db/schema.ts
+// Add this to your existing schema file alongside your Shopeeze tables
+
+import { pgTable, bigserial, bigint, text, jsonb, integer, timestamp } from 'drizzle-orm/pg-core';
+
+export const recipes = pgTable('recipes', {
+  id: bigserial('id', { mode: 'bigint' }).primaryKey(),
+  accountId: bigint('account_id', { mode: 'bigint' }).notNull(),
+  createdByUserId: bigint('created_by_user_id', { mode: 'bigint' }).notNull(),
+  
+  // Basic info
+  title: text('title').notNull(),
+  category: text('category'),
+  sourceUrl: text('source_url'),
+  imageUrl: text('image_url'),
+  
+  // Recipe content
+  ingredients: jsonb('ingredients').notNull().default([]),
+  baseInstructions: jsonb('base_instructions').notNull().default([]),
+  cookingMethods: jsonb('cooking_methods').default([]),
+  
+  // Metadata
+  prepTime: text('prep_time'),
+  servings: text('servings'),
+  tags: jsonb('tags').default([]),
+  
+  // User additions
+  notes: text('notes'),
+  rating: integer('rating'), // 1-5
+  
+  // Timestamps
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+});
+
+// TypeScript types
+export type Recipe = typeof recipes.$inferSelect;
+export type NewRecipe = typeof recipes.$inferInsert;
+
+// Example of structured data types for JSONB fields:
+export interface RecipeIngredient {
+  item: string;
+  amount: string;
+  unit: string;
+  notes?: string;
+}
+
+export interface RecipeStep {
+  step: number;
+  text: string;
+}
+
+export interface CookingMethod {
+  method: string; // "Oven", "Slow Cooker", "Smoker", etc.
+  temp: string;
+  time: string;
+  instructions: RecipeStep[];
+}
+
 export const insertItemSchema = createInsertSchema(items).omit({ id: true, createdAt: true, accountId: true });
 export const insertStoreSchema = createInsertSchema(stores).omit({ id: true, accountId: true });
 export const insertStoreListItemSchema = createInsertSchema(storeListItems).omit({ id: true });

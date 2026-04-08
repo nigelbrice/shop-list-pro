@@ -2,6 +2,7 @@ import { createContext, useContext, useState, useEffect, useCallback } from "rea
 import { enqueue, getQueue } from "@/lib/supabase-sync";
 import { mergeRows } from "@/lib/supabase-sync";
 import { aisleOrder } from "@/lib/categories";
+import { generateTempId } from "@/lib/idGenerator";
 export { aisleOrder };
 
 // =============================================
@@ -233,7 +234,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
   const addStore = useCallback((name: string) => {
     const now = new Date().toISOString();
     const newStore: Store = {
-      id: Date.now(),
+      id: generateTempId(),
       name: name.trim().replace(/\b\w/g, c => c.toUpperCase()),
       itemCount: 0,
       account_id: accountId ?? undefined,
@@ -324,7 +325,7 @@ export function StoreProvider({ children }: { children: React.ReactNode }) {
 
       // New entry
       const newListItem: StoreListItem = {
-        id: Date.now(),
+        id: generateTempId(),
         quantity: 1,
         completed: false,
         updated_at: now,
