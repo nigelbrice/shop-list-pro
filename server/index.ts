@@ -7,7 +7,10 @@ import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
 import recipeRoutes from './routes/recipes.js';
-import extractRecipeRoute from './routes/extract-recipe.js';
+import extractRecipeRoute from './routes/extract-recipe';
+import convertIngredientsRoute from './routes/convert-ingredients';
+import nutritionRoutes from './routes/nutrition';
+
 
 const app = express();
 const httpServer = createServer(app);
@@ -28,6 +31,8 @@ app.use(
 );
 
 app.use(express.urlencoded({ extended: false }));
+
+app.use('/api/recipes', nutritionRoutes);
 
 const PgStore = pgSession(session);
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
@@ -86,7 +91,8 @@ app.use((req, res, next) => {
 (async () => {
   // Add recipe routes BEFORE registerRoutes (so they're registered with session middleware)
   app.use('/api/recipes', recipeRoutes);
-  app.use('/api/extract-recipe', extractRecipeRoute);
+  app.use('/api', extractRecipeRoute); // Changed: route already has /extract-recipe in it
+  app.use('/api', convertIngredientsRoute); // Convert ingredients to grams
 
   await registerRoutes(httpServer, app);
 

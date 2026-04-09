@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Trash2, ArrowLeft, Upload, X } from 'lucide-react';
 import TagInput from '@/components/TagInput';
 import { RECIPE_CATEGORIES, type RecipeCategory } from '../types/recipe';
+import { NutritionCalculator } from '@/components/NutritionCalculator';
 
 interface CookingMethod {
   method: string;
@@ -27,6 +28,18 @@ interface Recipe {
   notes?: string;
   rating?: number;
   imageUrl?: string;
+  // Nutrition fields
+  caloriesPer100g?: number;
+  proteinPer100g?: number;
+  fatPer100g?: number;
+  carbsPer100g?: number;
+  caloriesPerServing?: number;
+  proteinPerServing?: number;
+  fatPerServing?: number;
+  carbsPerServing?: number;
+  totalWeight?: number;
+  calculatedAt?: string;
+  nutritionBreakdown?: any[];
 }
 
 const COOKING_METHOD_OPTIONS = [
@@ -71,6 +84,7 @@ export default function EditRecipe() {
   const [tags, setTags] = useState<string[]>([]);
   const [notes, setNotes] = useState('');
   const [rating, setRating] = useState<number | undefined>();
+  const [isConverting, setIsConverting] = useState(false);
   
   const [ingredients, setIngredients] = useState([
     { item: '', amount: '', unit: '' }
@@ -144,6 +158,33 @@ export default function EditRecipe() {
       setLocation(`/recipes/${recipeId}`);
     },
   });
+
+  // Convert ingredients to grams
+  const handleConvertToGrams = async () => {
+    setIsConverting(true);
+    try {
+      const response = await fetch('/api/convert-recipe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ ingredients }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Conversion failed');
+      }
+
+      const data = await response.json();
+      if (data.success && data.ingredients) {
+        setIngredients(data.ingredients);
+      }
+    } catch (error) {
+      console.error('Conversion error:', error);
+      alert('Failed to convert ingredients. Please try again.');
+    } finally {
+      setIsConverting(false);
+    }
+  };
 
   const addIngredient = () => {
     setIngredients([...ingredients, { item: '', amount: '', unit: '' }]);
@@ -238,7 +279,7 @@ const removeImage = () => {
     });
   };
 
-  const inputClass = "w-full px-4 py-2 border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600";
+  const inputClass = "w-full px-4 py-2 border rounded-lg bg-background text-foreground border-border";
 
   if (isLoading) {
     return (
@@ -267,18 +308,18 @@ const removeImage = () => {
       <div className="mb-6">
         <button
           onClick={() => setLocation(`/recipes/${recipeId}`)}
-          className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-4"
+          className="flex items-center gap-2 text-muted-foreground hover:text-gray-900 dark:hover:text-white mb-4"
         >
           <ArrowLeft size={20} />
           Back to recipe
         </button>
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Edit Recipe</h1>
+        <h1 className="text-3xl font-bold text-foreground">Edit Recipe</h1>
       </div>
 
-      <div className="space-y-6 p-6 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800">
+      <div className="space-y-6 p-6 rounded-lg border border-border bg-background">
         {/* Image Upload */}
         <div>
-          <label className="block text-sm font-medium mb-2 text-gray-900 dark:text-white">Recipe Image</label>
+          <label className="block text-sm font-medium mb-2 text-foreground">Recipe Image</label>
           {imageUrl ? (
             <div className="relative">
               <img
@@ -295,9 +336,9 @@ const removeImage = () => {
               </button>
             </div>
           ) : (
-            <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
+            <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-border rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
               <Upload className="mb-2 text-gray-400" size={32} />
-              <span className="text-sm text-gray-500 dark:text-gray-400">Click to upload image</span>
+              <span className="text-sm text-muted-foreground">Click to upload image</span>
               <input
                 type="file"
                 accept="image/*"
@@ -309,7 +350,7 @@ const removeImage = () => {
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-2 text-gray-900 dark:text-white">Recipe Title *</label>
+          <label className="block text-sm font-medium mb-2 text-foreground">Recipe Title *</label>
           <input
             type="text"
             value={title}
@@ -321,7 +362,7 @@ const removeImage = () => {
 
         {/* Category Selector */}
         <div>
-          <label className="block text-sm font-medium mb-2 text-gray-900 dark:text-white">Category</label>
+          <label className="block text-sm font-medium mb-2 text-foreground">Category</label>
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value as RecipeCategory)}
@@ -337,7 +378,7 @@ const removeImage = () => {
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium mb-2 text-gray-900 dark:text-white">Prep Time</label>
+            <label className="block text-sm font-medium mb-2 text-foreground">Prep Time</label>
             <input
               type="text"
               value={prepTime}
@@ -347,7 +388,7 @@ const removeImage = () => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-2 text-gray-900 dark:text-white">Servings</label>
+            <label className="block text-sm font-medium mb-2 text-foreground">Servings</label>
             <input
               type="text"
               value={servings}
@@ -359,7 +400,7 @@ const removeImage = () => {
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-2 text-gray-900 dark:text-white">Rating (1-5)</label>
+          <label className="block text-sm font-medium mb-2 text-foreground">Rating (1-5)</label>
           <input
             type="number"
             min="1"
@@ -372,20 +413,34 @@ const removeImage = () => {
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-2 text-gray-900 dark:text-white">Tags</label>
+          <label className="block text-sm font-medium mb-2 text-foreground">Tags</label>
           <TagInput tags={tags} onChange={setTags} />
         </div>
 
         <div>
           <div className="flex justify-between items-center mb-2">
-            <label className="block text-sm font-medium text-gray-900 dark:text-white">Ingredients</label>
-            <button
-              onClick={addIngredient}
-              type="button"
-              className="text-blue-600 hover:text-blue-700 text-sm flex items-center gap-1"
-            >
-              <Plus size={16} /> Add Ingredient
-            </button>
+            <label className="block text-sm font-medium text-foreground">Ingredients</label>
+            <div className="flex gap-2">
+              <button
+                onClick={handleConvertToGrams}
+                type="button"
+                disabled={isConverting || ingredients.length === 0}
+                className="text-accent hover:text-accent/80 text-sm flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path>
+                  <path d="M22 12A10 10 0 0 0 12 2v10z"></path>
+                </svg>
+                {isConverting ? 'Converting...' : 'Convert to Grams'}
+              </button>
+              <button
+                onClick={addIngredient}
+                type="button"
+                className="text-primary hover:text-primary/80 text-sm flex items-center gap-1"
+              >
+                <Plus size={16} /> Add Ingredient
+              </button>
+            </div>
           </div>
           <div className="space-y-2">
             {ingredients.map((ing, idx) => (
@@ -395,21 +450,21 @@ const removeImage = () => {
                   value={ing.amount}
                   onChange={(e) => updateIngredient(idx, 'amount', e.target.value)}
                   placeholder="Amount"
-                  className="w-24 px-3 py-2 border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600"
+                  className="w-24 px-3 py-2 border rounded-lg bg-background text-foreground border-border"
                 />
                 <input
                   type="text"
                   value={ing.unit}
                   onChange={(e) => updateIngredient(idx, 'unit', e.target.value)}
                   placeholder="Unit"
-                  className="w-24 px-3 py-2 border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600"
+                  className="w-24 px-3 py-2 border rounded-lg bg-background text-foreground border-border"
                 />
                 <input
                   type="text"
                   value={ing.item}
                   onChange={(e) => updateIngredient(idx, 'item', e.target.value)}
                   placeholder="Ingredient"
-                  className="flex-1 px-3 py-2 border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600"
+                  className="flex-1 px-3 py-2 border rounded-lg bg-background text-foreground border-border"
                 />
                 {ingredients.length > 1 && (
                   <button
@@ -427,14 +482,14 @@ const removeImage = () => {
 
         <div>
           <div className="flex justify-between items-center mb-2">
-            <label className="block text-sm font-medium text-gray-900 dark:text-white">
+            <label className="block text-sm font-medium text-foreground">
               Base Instructions
-              <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">(General method - use cooking variants below for specific methods)</span>
+              <span className="text-xs text-muted-foreground ml-2">(General method - use cooking variants below for specific methods)</span>
             </label>
             <button
               onClick={addInstruction}
               type="button"
-              className="text-blue-600 hover:text-blue-700 text-sm flex items-center gap-1"
+              className="text-primary hover:text-primary/80 text-sm flex items-center gap-1"
             >
               <Plus size={16} /> Add Step
             </button>
@@ -442,13 +497,13 @@ const removeImage = () => {
           <div className="space-y-2">
             {instructions.map((inst, idx) => (
               <div key={idx} className="flex gap-2">
-                <span className="text-sm font-semibold pt-2 w-8 text-gray-900 dark:text-white">{idx + 1}.</span>
+                <span className="text-sm font-semibold pt-2 w-8 text-foreground">{idx + 1}.</span>
                 <textarea
                   value={inst.text}
                   onChange={(e) => updateInstruction(idx, e.target.value)}
                   placeholder="Step instructions..."
                   rows={2}
-                  className="flex-1 px-3 py-2 border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600"
+                  className="flex-1 px-3 py-2 border rounded-lg bg-background text-foreground border-border"
                 />
                 {instructions.length > 1 && (
                   <button
@@ -468,17 +523,17 @@ const removeImage = () => {
         <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
           <div className="flex justify-between items-center mb-4">
             <div>
-              <label className="block text-sm font-medium text-gray-900 dark:text-white">
+              <label className="block text-sm font-medium text-foreground">
                 Cooking Method Variants
               </label>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              <p className="text-xs text-muted-foreground mt-1">
                 Add different cooking methods (e.g., Oven, Slow Cooker, Smoker) with specific temps & times
               </p>
             </div>
             <button
               onClick={addCookingMethod}
               type="button"
-              className="text-blue-600 hover:text-blue-700 text-sm flex items-center gap-1"
+              className="text-primary hover:text-primary/80 text-sm flex items-center gap-1"
             >
               <Plus size={16} /> Add Method
             </button>
@@ -486,9 +541,9 @@ const removeImage = () => {
 
           <div className="space-y-4">
             {cookingMethods.map((method, idx) => (
-              <div key={idx} className="p-4 border border-gray-300 dark:border-gray-600 rounded-lg bg-gray-50 dark:bg-gray-900">
+              <div key={idx} className="p-4 border border-border rounded-lg bg-muted">
                 <div className="flex justify-between items-start mb-3">
-                  <h4 className="font-semibold text-gray-900 dark:text-white">Method {idx + 1}</h4>
+                  <h4 className="font-semibold text-foreground">Method {idx + 1}</h4>
                   <button
                     onClick={() => removeCookingMethod(idx)}
                     type="button"
@@ -500,13 +555,13 @@ const removeImage = () => {
 
                 <div className="space-y-3">
                   <div>
-                    <label className="block text-xs font-medium mb-1 text-gray-700 dark:text-gray-300">
+                    <label className="block text-xs font-medium mb-1 text-muted-foreground">
                       Cooking Method *
                     </label>
                     <select
                       value={method.method}
                       onChange={(e) => updateCookingMethod(idx, 'method', e.target.value)}
-                      className="w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600"
+                      className="w-full px-3 py-2 border rounded-lg bg-background text-foreground border-border"
                     >
                       <option value="">Select method...</option>
                       {COOKING_METHOD_OPTIONS.map(opt => (
@@ -517,7 +572,7 @@ const removeImage = () => {
 
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-medium mb-1 text-gray-700 dark:text-gray-300">
+                      <label className="block text-xs font-medium mb-1 text-muted-foreground">
                         Temperature
                       </label>
                       <input
@@ -525,11 +580,11 @@ const removeImage = () => {
                         value={method.temperature || ''}
                         onChange={(e) => updateCookingMethod(idx, 'temperature', e.target.value)}
                         placeholder="e.g., 375°F or Low"
-                        className="w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600"
+                        className="w-full px-3 py-2 border rounded-lg bg-background text-foreground border-border"
                       />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium mb-1 text-gray-700 dark:text-gray-300">
+                      <label className="block text-xs font-medium mb-1 text-muted-foreground">
                         Cook Time
                       </label>
                       <input
@@ -537,13 +592,13 @@ const removeImage = () => {
                         value={method.time || ''}
                         onChange={(e) => updateCookingMethod(idx, 'time', e.target.value)}
                         placeholder="e.g., 25-30 minutes"
-                        className="w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600"
+                        className="w-full px-3 py-2 border rounded-lg bg-background text-foreground border-border"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-medium mb-1 text-gray-700 dark:text-gray-300">
+                    <label className="block text-xs font-medium mb-1 text-muted-foreground">
                       Instructions *
                     </label>
                     <textarea
@@ -551,12 +606,12 @@ const removeImage = () => {
                       onChange={(e) => updateCookingMethod(idx, 'instructions', e.target.value)}
                       placeholder="Specific instructions for this cooking method..."
                       rows={3}
-                      className="w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600"
+                      className="w-full px-3 py-2 border rounded-lg bg-background text-foreground border-border"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-medium mb-1 text-gray-700 dark:text-gray-300">
+                    <label className="block text-xs font-medium mb-1 text-muted-foreground">
                       Notes
                     </label>
                     <input
@@ -564,7 +619,7 @@ const removeImage = () => {
                       value={method.notes || ''}
                       onChange={(e) => updateCookingMethod(idx, 'notes', e.target.value)}
                       placeholder="Optional tips or notes..."
-                      className="w-full px-3 py-2 border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600"
+                      className="w-full px-3 py-2 border rounded-lg bg-background text-foreground border-border"
                     />
                   </div>
                 </div>
@@ -572,15 +627,36 @@ const removeImage = () => {
             ))}
 
             {cookingMethods.length === 0 && (
-              <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
+              <p className="text-sm text-muted-foreground text-center py-4">
                 No cooking method variants yet. Click "Add Method" to add one.
               </p>
             )}
           </div>
         </div>
 
+        {/* Nutrition Calculator */}
+        {recipe && (
+          <NutritionCalculator 
+            recipeId={recipe.id} 
+            existingNutrition={{
+              caloriesPer100g: recipe.caloriesPer100g,
+              proteinPer100g: recipe.proteinPer100g,
+              fatPer100g: recipe.fatPer100g,
+              carbsPer100g: recipe.carbsPer100g,
+              caloriesPerServing: recipe.caloriesPerServing,
+              proteinPerServing: recipe.proteinPerServing,
+              fatPerServing: recipe.fatPerServing,
+              carbsPerServing: recipe.carbsPerServing,
+              totalWeight: recipe.totalWeight,
+              calculatedAt: recipe.calculatedAt,
+              nutritionBreakdown: recipe.nutritionBreakdown,
+            }}
+            variant="button"
+          />
+        )}
+
         <div>
-          <label className="block text-sm font-medium mb-2 text-gray-900 dark:text-white">Notes</label>
+          <label className="block text-sm font-medium mb-2 text-foreground">Notes</label>
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
@@ -595,14 +671,14 @@ const removeImage = () => {
             onClick={handleSubmit}
             disabled={updateMutation.isPending}
             type="button"
-            className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 disabled:bg-gray-400"
+            className="bg-primary text-primary-foreground px-6 py-2 rounded-lg hover:bg-primary/90 disabled:bg-gray-400"
           >
             {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
           </button>
           <button
             onClick={() => setLocation(`/recipes/${recipeId}`)}
             type="button"
-            className="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-6 py-2 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600"
+            className="bg-secondary text-secondary-foreground px-6 py-2 rounded-lg hover:bg-secondary/80"
           >
             Cancel
           </button>

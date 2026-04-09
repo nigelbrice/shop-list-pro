@@ -71,13 +71,13 @@ export default function TagInput({ tags, onChange }: TagInputProps) {
           {tags.map((tag, i) => (
             <span
               key={i}
-              className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300"
+              className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm bg-primary/10 text-primary"
             >
               {tag}
               <button
                 type="button"
                 onClick={() => removeTag(tag)}
-                className="hover:text-blue-900 dark:hover:text-blue-100"
+                className="hover:text-primary/70"
               >
                 <X size={14} />
               </button>
@@ -102,19 +102,19 @@ export default function TagInput({ tags, onChange }: TagInputProps) {
             setTimeout(() => setShowSuggestions(false), 200);
           }}
           placeholder="Type to search or add custom tag..."
-          className="w-full px-4 py-2 border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-300 dark:border-gray-600"
+          className="w-full px-4 py-2 border rounded-lg bg-background text-foreground border-border"
         />
 
         {/* Suggestions dropdown */}
         {showSuggestions && filteredSuggestions.length > 0 && (
-          <div className="absolute z-10 w-full mt-1 max-h-60 overflow-y-auto bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-lg">
+          <div className="absolute z-10 w-full mt-1 max-h-60 overflow-y-auto bg-card border border-border rounded-lg shadow-lg">
             <div className="p-2 space-y-1">
               {filteredSuggestions.slice(0, 20).map((tag) => (
                 <button
                   key={tag}
                   type="button"
                   onClick={() => addTag(tag)}
-                  className="w-full text-left px-3 py-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700 text-sm text-gray-900 dark:text-gray-100"
+                  className="w-full text-left px-3 py-2 rounded hover:bg-secondary text-sm text-foreground"
                 >
                   {tag}
                 </button>
@@ -127,13 +127,13 @@ export default function TagInput({ tags, onChange }: TagInputProps) {
       {/* Quick add popular tags */}
       {!inputValue && (
         <div className="flex gap-2 flex-wrap">
-          <span className="text-xs text-gray-500 dark:text-gray-400 py-1">Quick add:</span>
+          <span className="text-xs text-muted-foreground py-1">Quick add:</span>
           {['breakfast', 'lunch', 'dinner', 'dessert', 'vegetarian', 'quick'].map(tag => (
             <button
               key={tag}
               type="button"
               onClick={() => addTag(tag)}
-              className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
+              className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs bg-secondary text-secondary-foreground hover:bg-secondary/80"
             >
               <Plus size={12} />
               {tag}
@@ -142,7 +142,7 @@ export default function TagInput({ tags, onChange }: TagInputProps) {
         </div>
       )}
 
-      <p className="text-xs text-gray-500 dark:text-gray-400">
+      <p className="text-xs text-muted-foreground">
         Press Enter to add custom tags, or click suggestions above
       </p>
     </div>

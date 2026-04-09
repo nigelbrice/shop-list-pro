@@ -1,152 +1,155 @@
+console.log('🔥 EXTRACT-RECIPE FILE LOADED 🔥');
+
 // server/routes/extract-recipe.ts
-// Using Claude Haiku 3.5 - 10x cheaper than Sonnet! (~1-2 cents per recipe)
+import express from 'express';
+import Anthropic from '@anthropic-ai/sdk';
 
-import { Router } from 'express';
+const router = express.Router();
+const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
-const router = Router();
-
-// Helper function to check if text is a URL
-function isUrl(text: string): boolean {
+// Helper: Fetch URL content via Jina AI Reader (free tier)
+async function fetchUrlContent(url: string): Promise<string> {
   try {
-    const url = new URL(text.trim());
-    return url.protocol === 'http:' || url.protocol === 'https:';
-  } catch {
-    return false;
-  }
-}
-
-// Helper function to fetch webpage content via Jina AI Reader (free, clean text)
-async function fetchWebpage(url: string): Promise<string> {
-  try {
-    // Use Jina AI Reader to get clean text instead of raw HTML
-    const jinaUrl = `https://r.jina.ai/${url}`;
-    
-    const response = await fetch(jinaUrl, {
-      headers: {
-        'Accept': 'text/plain',
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch via Jina: ${response.statusText}`);
-    }
-
-    const cleanText = await response.text();
-    console.log('Jina Reader returned clean text, length:', cleanText.length);
-    return cleanText;
-    
-  } catch (error) {
-    console.error('Jina Reader failed, falling back to direct fetch:', error);
-    
-    // Fallback: direct fetch
-    const response = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        'Accept': 'text/html',
-      },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch URL: ${response.statusText}`);
-    }
-
+    const jinaUrl = `https://r.jina.ai/${encodeURIComponent(url)}`;
+    const response = await fetch(jinaUrl);
+    if (!response.ok) throw new Error(`Jina fetch failed: ${response.statusText}`);
     return await response.text();
+  } catch (error) {
+    console.error('Jina fetch error:', error);
+    throw new Error('Failed to fetch URL content');
   }
 }
 
-router.post('/', async (req, res) => {
+router.post('/extract-recipe', async (req, res) => {
   try {
-    let { text } = req.body;
+    const { input, text } = req.body; // Accept both 'input' and 'text' for compatibility
+    const userInput = input || text;
 
-    if (!text) {
-      return res.status(400).json({ error: 'Text is required' });
+    if (!userInput || typeof userInput !== 'string') {
+      return res.status(400).json({ error: 'No input provided' });
     }
 
-    // Check if input is a URL and fetch if so
-    let sourceType = 'text';
-    if (isUrl(text)) {
-      console.log('Detected URL, fetching webpage:', text);
-      sourceType = 'url';
-      try {
-        text = await fetchWebpage(text);
-        console.log('Successfully fetched webpage, content length:', text.length);
-      } catch (fetchError) {
-        console.error('Failed to fetch URL:', fetchError);
-        return res.status(400).json({ 
-          error: 'Could not fetch the URL. Please copy and paste the recipe text instead.',
-          details: fetchError instanceof Error ? fetchError.message : 'Unknown error'
-        });
-      }
+    let content = userInput.trim();
+
+    // If it looks like a URL, fetch it first
+    if (content.startsWith('http://') || content.startsWith('https://')) {
+      console.log('Fetching URL via Jina AI:', content);
+      content = await fetchUrlContent(content);
     }
 
-    console.log(`Attempting to extract recipe from ${sourceType}, text length:`, text.length);
+    console.log('Extracting recipe with AI (Haiku 4.5)...');
 
-    // Use Claude Sonnet 4 - Reliable and works perfectly
-    // With Jina AI cleaning: ~6 cents per recipe (vs 50 cents without Jina!)
-    // For 150 recipes: ~$9 total - reasonable for a one-time import
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': process.env.ANTHROPIC_API_KEY || '',
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 2000,
-        messages: [
-          {
-            role: 'user',
-            content: `Extract recipe information from the following text.
+    // Call Claude Haiku 4.5 for extraction with automatic gram conversion
+    const message = await anthropic.messages.create({
+      model: 'claude-haiku-4-5-20251001', // ⭐ Haiku 4.5 - 5x cheaper!
+      max_tokens: 4000,
+      messages: [
+        {
+          role: 'user',
+          content: `You are a recipe extraction assistant. Extract the recipe from the text below and convert ALL measurements to grams or milliliters.
 
-Return ONLY valid JSON with this exact structure (no markdown, no preamble):
+CRITICAL: Your response must be ONLY valid JSON. Do not include any markdown, explanations, or other text. Start directly with { and end with }.
+
+CONVERSION RULES:
+1. Convert ALL volume measurements to weight in grams:
+   - 1 cup all-purpose flour = 120g
+   - 1 cup granulated sugar = 200g
+   - 1 cup brown sugar = 220g
+   - 1 cup butter = 227g
+   - 1 cup milk = 240ml
+   - 1 cup water = 240ml
+   - 1 tbsp = 15ml (or 15g for most ingredients)
+   - 1 tsp = 5ml (or 5g for most ingredients)
+
+2. Convert weight units to grams:
+   - 1 oz = 28g
+   - 1 lb = 454g
+   - 1 kg = 1000g
+
+3. For whole items, estimate weight:
+   - 1 medium onion = 150g
+   - 1 large onion = 200g
+   - 1 small onion = 100g
+   - 1 garlic clove = 5g
+   - 1 medium egg = 50g
+   - 1 large egg = 60g
+   - 1 medium potato = 150g
+   - 1 medium tomato = 100g
+   - 1 medium carrot = 60g
+   - 1 medium lemon = 80g (or "15ml lemon juice" if juiced)
+
+4. Include the size descriptor in the ingredient name:
+   - "150g medium onion, chopped" (not just "150g onion")
+   - "200g large eggs" (not just "200g eggs")
+
+Required JSON format (respond with ONLY this JSON, nothing else):
 {
-  "title": "Recipe name",
+  "title": "Recipe Name",
+  "category": "Breakfast|Lunch|Dinner|Dessert|Snacks|Drinks|Sides",
+  "sourceUrl": "original URL if provided",
   "ingredients": [
-    {"item": "ingredient name", "amount": "quantity", "unit": "measurement", "notes": "optional notes"}
+    {"item": "all-purpose flour", "amount": "240", "unit": "g"},
+    {"item": "medium onion, finely chopped", "amount": "150", "unit": "g"}
   ],
   "baseInstructions": [
-    {"step": 1, "text": "instruction text"}
+    {"step": 1, "text": "Instruction text here"}
   ],
-  "prepTime": "optional prep time",
-  "servings": "optional servings",
-  "tags": ["optional", "tags"]
+  "prepTime": "30 minutes",
+  "servings": "4 servings",
+  "tags": ["dinner", "pasta", "italian"]
 }
 
-Text to extract:
-${text}`,
-          },
-        ],
-      }),
+TEXT TO EXTRACT FROM:
+${content}`,
+        },
+      ],
     });
 
-    console.log('Claude Sonnet response status:', response.status);
-
-    if (!response.ok) {
-      const errorBody = await response.text();
-      console.error('Claude error response:', errorBody);
-      throw new Error(`Claude API error: ${response.statusText} - ${errorBody}`);
+    const extracted = message.content[0];
+    if (extracted.type !== 'text') {
+      throw new Error('Unexpected response format');
     }
 
-    const data = await response.json();
-    console.log('Claude response received, content blocks:', data.content?.length);
+    console.log('=== RAW AI RESPONSE ===');
+    console.log(extracted.text);
+    console.log('=== END RAW RESPONSE ===');
 
-    const textContent = data.content.map((i: any) => i.text || '').join('\n');
+    // Parse the JSON response - be very aggressive about finding the JSON
+    const recipeText = extracted.text.trim();
     
-    // Clean and parse JSON
-    const clean = textContent.replace(/```json|```/g, '').trim();
-    const parsed = JSON.parse(clean);
+    // Remove any markdown code blocks
+    let cleanedText = recipeText.replace(/```json\s*/g, '').replace(/```\s*/g, '');
     
-    console.log('Successfully parsed recipe:', parsed.title);
-    res.json(parsed);
+    // Try to find JSON object between curly braces
+    const jsonMatch = cleanedText.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) {
+      console.error('AI response:', recipeText);
+      throw new Error('No JSON found in AI response');
+    }
+
+    let recipe;
+    try {
+      recipe = JSON.parse(jsonMatch[0]);
+    } catch (parseError) {
+      console.error('Failed to parse JSON:', jsonMatch[0]);
+      throw new Error('Invalid JSON in AI response');
+    }
+
+    // Validate required fields
+    if (!recipe.title || !recipe.ingredients || !recipe.baseInstructions) {
+      throw new Error('Invalid recipe format: missing required fields');
+    }
+
+    console.log('Recipe extracted successfully:', recipe.title);
+
+    // Return in the format the frontend expects: { success: true, recipe: {...} }
+    res.json({ success: true, recipe });
 
   } catch (error) {
     console.error('Recipe extraction error:', error);
-    if (error instanceof Error) {
-      console.error('Error message:', error.message);
-      console.error('Error stack:', error.stack);
-    }
-    res.status(500).json({ error: 'Failed to extract recipe' });
+    res.status(500).json({ 
+      error: error instanceof Error ? error.message : 'Failed to extract recipe' 
+    });
   }
 });
 

@@ -1,4 +1,4 @@
-import { pgTable, text, serial, boolean, timestamp, integer } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, boolean, timestamp, integer, real, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -74,6 +74,23 @@ export const recipes = pgTable('recipes', {
   notes: text('notes'),
   rating: integer('rating'), // 1-5
   
+  // Nutrition data (per 100g)
+  caloriesPer100g: real('calories_per_100g'),
+  proteinPer100g: real('protein_per_100g'), // in grams
+  fatPer100g: real('fat_per_100g'), // in grams
+  carbsPer100g: real('carbs_per_100g'), // in grams
+  
+  // Nutrition data (per serving)
+  caloriesPerServing: real('calories_per_serving'),
+  proteinPerServing: real('protein_per_serving'), // in grams
+  fatPerServing: real('fat_per_serving'), // in grams
+  carbsPerServing: real('carbs_per_serving'), // in grams
+  
+  // Nutrition metadata
+  totalWeight: real('total_weight'), // total recipe weight in grams
+  calculatedAt: timestamp('calculated_at', { withTimezone: true }),
+  nutritionBreakdown: jsonb('nutrition_breakdown'), // ingredient breakdown with sources
+  
   // Timestamps
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
@@ -101,6 +118,23 @@ export interface CookingMethod {
   temp: string;
   time: string;
   instructions: RecipeStep[];
+}
+
+export interface NutritionData {
+  per100g: {
+    calories: number;
+    protein: number;
+    fat: number;
+    carbs: number;
+  };
+  perServing: {
+    calories: number;
+    protein: number;
+    fat: number;
+    carbs: number;
+  };
+  totalWeight: number; // in grams
+  calculatedAt: Date;
 }
 
 export const insertItemSchema = createInsertSchema(items).omit({ id: true, createdAt: true, accountId: true });

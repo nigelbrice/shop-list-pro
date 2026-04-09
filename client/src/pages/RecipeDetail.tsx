@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Edit2, Trash2, Star, Clock, Users, Flame, ThermometerSun, Printer } from 'lucide-react';
 import type { Recipe, RecipeCategory } from '../types/recipe';
 import { RecipeToShoppingList } from '../components/RecipeToShoppingList';
+import { NutritionCalculator } from '../components/NutritionCalculator';
 
 // Category emoji helper
 const getCategoryEmoji = (category?: RecipeCategory) => {
@@ -155,7 +156,7 @@ export default function RecipeDetail() {
           <div className="no-print">
             <button
               onClick={() => setLocation('/recipes')}
-              className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white mb-4"
+              className="flex items-center gap-2 text-muted-foreground hover:text-gray-900 dark:hover:text-white mb-4"
             >
               <ArrowLeft size={20} />
               Back to recipes
@@ -167,18 +168,18 @@ export default function RecipeDetail() {
               {/* Category badge */}
               {recipe.category && (
                 <div className="mb-3">
-                  <span className="text-sm bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 px-3 py-1.5 rounded-full font-medium">
+                  <span className="text-sm bg-accent/10 text-accent px-3 py-1.5 rounded-full font-medium">
                     {getCategoryEmoji(recipe.category)} {recipe.category}
                   </span>
                 </div>
               )}
 
-              <h1 className="text-4xl font-bold mb-2 text-gray-900 dark:text-white">
+              <h1 className="text-4xl font-bold mb-2 text-card-foreground">
                 {recipe.title}
               </h1>
 
               {/* Meta info */}
-              <div className="flex gap-4 text-gray-600 dark:text-gray-400 mb-4">
+              <div className="flex gap-4 text-muted-foreground mb-4">
                 {recipe.prepTime && (
                   <span className="flex items-center gap-1">
                     <Clock size={16} />
@@ -199,7 +200,7 @@ export default function RecipeDetail() {
                   {recipe.tags.map((tag, i) => (
                     <span
                       key={i}
-                      className="text-sm bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 px-3 py-1 rounded-full"
+                      className="text-sm bg-primary/10 text-primary px-3 py-1 rounded-full"
                     >
                       {tag}
                     </span>
@@ -223,7 +224,7 @@ export default function RecipeDetail() {
                       />
                     ))}
                   </div>
-                  <span className="text-sm text-gray-600 dark:text-gray-400">
+                  <span className="text-sm text-muted-foreground">
                     {recipe.rating}/5
                   </span>
                 </div>
@@ -235,21 +236,21 @@ export default function RecipeDetail() {
               <RecipeToShoppingList recipe={recipe} />
               <button
                 onClick={handlePrint}
-                className="p-2 text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+                className="p-2 text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400 hover:bg-secondary rounded-lg"
                 title="Print recipe"
               >
                 <Printer size={20} />
               </button>
               <button
                 onClick={() => setLocation(`/recipes/${recipeId}/edit`)}
-                className="p-2 text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+                className="p-2 text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400 hover:bg-secondary rounded-lg"
                 title="Edit recipe"
               >
                 <Edit2 size={20} />
               </button>
               <button
                 onClick={() => setShowDeleteConfirm(true)}
-                className="p-2 text-gray-600 dark:text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+                className="p-2 text-muted-foreground hover:text-red-600 dark:hover:text-red-400 hover:bg-secondary rounded-lg"
                 title="Delete recipe"
               >
                 <Trash2 size={20} />
@@ -272,13 +273,13 @@ export default function RecipeDetail() {
         {/* Cooking Method Tabs */}
         {hasCookingMethods && (
           <div className="mb-6 no-print">
-            <div className="flex gap-2 flex-wrap border-b border-gray-200 dark:border-gray-700">
+            <div className="flex gap-2 flex-wrap border-b border-border">
               <button
                 onClick={() => setSelectedMethod('base')}
                 className={`px-4 py-2 font-medium transition-colors ${
                   selectedMethod === 'base'
-                    ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                    ? 'text-primary border-b-2 border-blue-600 dark:border-blue-400'
+                    : 'text-muted-foreground hover:text-gray-900 dark:hover:text-white'
                 }`}
               >
                 Base Recipe
@@ -289,8 +290,8 @@ export default function RecipeDetail() {
                   onClick={() => setSelectedMethod(idx)}
                   className={`px-4 py-2 font-medium transition-colors flex items-center gap-2 ${
                     selectedMethod === idx
-                      ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'
-                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                      ? 'text-primary border-b-2 border-blue-600 dark:border-blue-400'
+                      : 'text-muted-foreground hover:text-gray-900 dark:hover:text-white'
                   }`}
                 >
                   <Flame size={16} />
@@ -304,23 +305,23 @@ export default function RecipeDetail() {
         {/* Cooking Method Info (if variant selected) */}
         {currentMethod && (
           <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-            <h3 className="font-bold mb-2 text-gray-900 dark:text-white">{currentMethod.method}</h3>
+            <h3 className="font-bold mb-2 text-card-foreground">{currentMethod.method}</h3>
             <div className="flex gap-6 text-sm">
               {currentMethod.temperature && (
                 <div className="flex items-center gap-2">
-                  <ThermometerSun size={18} className="text-blue-600 dark:text-blue-400" />
-                  <span className="text-gray-900 dark:text-white font-medium">{currentMethod.temperature}</span>
+                  <ThermometerSun size={18} className="text-primary" />
+                  <span className="text-card-foreground font-medium">{currentMethod.temperature}</span>
                 </div>
               )}
               {currentMethod.time && (
                 <div className="flex items-center gap-2">
-                  <Clock size={18} className="text-blue-600 dark:text-blue-400" />
-                  <span className="text-gray-900 dark:text-white font-medium">{currentMethod.time}</span>
+                  <Clock size={18} className="text-primary" />
+                  <span className="text-card-foreground font-medium">{currentMethod.time}</span>
                 </div>
               )}
             </div>
             {currentMethod.notes && (
-              <p className="mt-2 text-sm text-gray-700 dark:text-gray-300">
+              <p className="mt-2 text-sm text-muted-foreground">
                 💡 {currentMethod.notes}
               </p>
             )}
@@ -330,14 +331,14 @@ export default function RecipeDetail() {
         {/* Main content */}
         <div className="grid md:grid-cols-2 gap-8 print-grid">
           {/* Ingredients */}
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border border-gray-200 dark:border-gray-700">
-            <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">
+          <div className="bg-card p-6 rounded-lg border border-border">
+            <h2 className="text-2xl font-bold mb-4 text-card-foreground">
               Ingredients
             </h2>
             <ul className="space-y-2">
               {recipe.ingredients.map((ing, i) => (
-                <li key={i} className="flex items-start gap-2 text-gray-700 dark:text-gray-300">
-                  <span className="text-blue-600 dark:text-blue-400">•</span>
+                <li key={i} className="flex items-start gap-2 text-muted-foreground">
+                  <span className="text-primary">•</span>
                   <span>
                     <span className="font-medium">
                       {ing.amount} {ing.unit}
@@ -355,15 +356,15 @@ export default function RecipeDetail() {
           </div>
 
           {/* Instructions */}
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg border border-gray-200 dark:border-gray-700">
-            <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-white">
+          <div className="bg-card p-6 rounded-lg border border-border">
+            <h2 className="text-2xl font-bold mb-4 text-card-foreground">
               Instructions
             </h2>
             
             {currentMethod ? (
               // Show cooking method specific instructions
               <div className="prose prose-sm dark:prose-invert max-w-none">
-                <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                <p className="text-muted-foreground whitespace-pre-wrap">
                   {currentMethod.instructions}
                 </p>
               </div>
@@ -372,10 +373,10 @@ export default function RecipeDetail() {
               <ol className="space-y-4">
                 {recipe.baseInstructions.map((inst) => (
                   <li key={inst.step} className="flex gap-3">
-                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-sm font-bold">
+                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-sm font-bold">
                       {inst.step}
                     </span>
-                    <span className="text-gray-700 dark:text-gray-300 pt-0.5">
+                    <span className="text-muted-foreground pt-0.5">
                       {inst.text}
                     </span>
                   </li>
@@ -387,30 +388,50 @@ export default function RecipeDetail() {
 
         {/* Notes */}
         {recipe.notes && (
-          <div className="mt-8 bg-white dark:bg-gray-800 p-6 rounded-lg border border-gray-200 dark:border-gray-700">
-            <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-white">
+          <div className="mt-8 bg-card p-6 rounded-lg border border-border">
+            <h3 className="text-lg font-semibold mb-2 text-card-foreground">
               Notes
             </h3>
-            <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+            <p className="text-muted-foreground whitespace-pre-wrap">
               {recipe.notes}
             </p>
           </div>
         )}
 
+        {/* Nutrition Facts */}
+        <div className="mt-8">
+          <NutritionCalculator 
+            recipeId={recipe.id} 
+            existingNutrition={{
+              caloriesPer100g: recipe.caloriesPer100g,
+              proteinPer100g: recipe.proteinPer100g,
+              fatPer100g: recipe.fatPer100g,
+              carbsPer100g: recipe.carbsPer100g,
+              caloriesPerServing: recipe.caloriesPerServing,
+              proteinPerServing: recipe.proteinPerServing,
+              fatPerServing: recipe.fatPerServing,
+              carbsPerServing: recipe.carbsPerServing,
+              totalWeight: recipe.totalWeight,
+              calculatedAt: recipe.calculatedAt,
+            }}
+            variant="card"
+          />
+        </div>
+
         {/* Delete confirmation dialog */}
         {showDeleteConfirm && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 no-print">
-            <div className="bg-white dark:bg-gray-800 p-6 rounded-lg max-w-md mx-4">
-              <h3 className="text-xl font-bold mb-4 text-gray-900 dark:text-white">
+            <div className="bg-card p-6 rounded-lg max-w-md mx-4">
+              <h3 className="text-xl font-bold mb-4 text-card-foreground">
                 Delete Recipe?
               </h3>
-              <p className="text-gray-600 dark:text-gray-400 mb-6">
+              <p className="text-muted-foreground mb-6">
                 Are you sure you want to delete "{recipe.title}"? This action cannot be undone.
               </p>
               <div className="flex gap-3 justify-end">
                 <button
                   onClick={() => setShowDeleteConfirm(false)}
-                  className="px-4 py-2 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg"
+                  className="px-4 py-2 text-muted-foreground hover:bg-secondary rounded-lg"
                 >
                   Cancel
                 </button>

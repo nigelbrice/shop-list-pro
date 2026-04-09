@@ -113,19 +113,40 @@ export default function AddRecipe() {
 
     setIsExtracting(true);
     try {
-      const response = await fetch('/api/extract-recipe', {
+      // Add cache-busting parameter
+      const cacheBuster = Date.now();
+      const response = await fetch(`/api/extract-recipe?_=${cacheBuster}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
+        cache: 'no-store', // Force bypass cache
         body: JSON.stringify({ text: inputText }),
       });
 
+      console.log('Response status:', response.status);
+      console.log('Response headers:', Object.fromEntries(response.headers));
+      
+      // Get the raw text first
+      const rawText = await response.text();
+      console.log('Raw response (first 500 chars):', rawText.substring(0, 500));
+
       if (!response.ok) {
-        throw new Error('Extraction failed');
+        console.error('Server error:', rawText);
+        throw new Error(`Extraction failed: ${response.status} ${response.statusText}`);
       }
 
-      const parsed = await response.json();
-      setExtractedRecipe(parsed);
+      // Try to parse as JSON
+      let parsed;
+      try {
+        parsed = JSON.parse(rawText);
+      } catch (e) {
+        console.error('JSON parse error:', e);
+        console.error('Full response text:', rawText);
+        throw new Error('Server returned invalid JSON');
+      }
+
+      // Backend now returns { success: true, recipe: {...} }
+      setExtractedRecipe(parsed.recipe || parsed);
     } catch (error) {
       console.error('Extraction error:', error);
       alert('Failed to extract recipe. Try manual entry or check the input.');
@@ -206,7 +227,7 @@ export default function AddRecipe() {
     }
   };
 
-  const inputClass = "w-full px-4 py-2 border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100";
+  const inputClass = "w-full px-4 py-2 border rounded-lg bg-background text-foreground";
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
@@ -219,8 +240,8 @@ export default function AddRecipe() {
           type="button"
           className={`px-4 py-2 rounded-lg flex items-center gap-2 ${
             mode === 'ai'
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300'
+              ? 'bg-primary text-primary-foreground'
+              : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
           }`}
         >
           <Sparkles size={18} />
@@ -231,8 +252,8 @@ export default function AddRecipe() {
           type="button"
           className={`px-4 py-2 rounded-lg ${
             mode === 'manual'
-              ? 'bg-blue-600 text-white'
-              : 'bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300'
+              ? 'bg-primary text-primary-foreground'
+              : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
           }`}
         >
           Manual Entry
@@ -258,9 +279,9 @@ export default function AddRecipe() {
             </button>
           </div>
         ) : (
-          <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800">
+          <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-border rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800">
             <Upload className="mb-2 text-gray-400" size={32} />
-            <span className="text-sm text-gray-500 dark:text-gray-400">Click to upload image</span>
+            <span className="text-sm text-muted-foreground">Click to upload image</span>
             <input
               type="file"
               accept="image/*"
@@ -307,7 +328,7 @@ export default function AddRecipe() {
             onClick={handleAiExtract}
             disabled={isExtracting || !inputText.trim()}
             type="button"
-            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
+            className="bg-primary text-primary-foreground px-6 py-2 rounded-lg hover:bg-primary/90 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center gap-2"
           >
             {isExtracting ? (
               <>
@@ -324,10 +345,10 @@ export default function AddRecipe() {
 
           {/* Preview extracted recipe */}
           {extractedRecipe && (
-            <div className="border border-gray-300 dark:border-gray-600 rounded-lg p-6 bg-gray-50 dark:bg-gray-800">
+            <div className="border border-border rounded-lg p-6 bg-gray-50 dark:bg-gray-800">
               <h2 className="text-xl font-bold mb-4">{extractedRecipe.title}</h2>
               
-              <div className="flex gap-4 text-sm text-gray-600 dark:text-gray-400 mb-4">
+              <div className="flex gap-4 text-sm text-muted-foreground mb-4">
                 {extractedRecipe.prepTime && <span>⏱️ {extractedRecipe.prepTime}</span>}
                 {extractedRecipe.servings && <span>👥 {extractedRecipe.servings}</span>}
               </div>
@@ -347,7 +368,7 @@ export default function AddRecipe() {
                 {extractedRecipe.ingredients.map((ing, i) => (
                   <li key={i} className="text-sm">
                     {ing.amount} {ing.unit} {ing.item}
-                    {ing.notes && <span className="text-gray-600 dark:text-gray-400"> ({ing.notes})</span>}
+                    {ing.notes && <span className="text-muted-foreground"> ({ing.notes})</span>}
                   </li>
                 ))}
               </ul>
@@ -366,14 +387,14 @@ export default function AddRecipe() {
                   onClick={handleSaveExtracted}
                   disabled={isSaving}
                   type="button"
-                  className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 disabled:bg-gray-400"
+                  className="bg-primary text-primary-foreground px-6 py-2 rounded-lg hover:bg-primary/90 disabled:bg-gray-400"
                 >
                   {isSaving ? 'Saving...' : 'Save Recipe'}
                 </button>
                 <button
                   onClick={() => setExtractedRecipe(null)}
                   type="button"
-                  className="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-6 py-2 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600"
+                  className="bg-secondary text-secondary-foreground px-6 py-2 rounded-lg hover:bg-secondary/80"
                 >
                   Start Over
                 </button>
@@ -429,7 +450,7 @@ export default function AddRecipe() {
               <button
                 onClick={addIngredient}
                 type="button"
-                className="text-blue-600 hover:text-blue-700 text-sm flex items-center gap-1"
+                className="text-primary hover:text-primary/80 text-sm flex items-center gap-1"
               >
                 <Plus size={16} /> Add Ingredient
               </button>
@@ -442,21 +463,21 @@ export default function AddRecipe() {
                     value={ing.amount}
                     onChange={(e) => updateIngredient(idx, 'amount', e.target.value)}
                     placeholder="Amount"
-                    className="w-24 px-3 py-2 border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                    className="w-24 px-3 py-2 border rounded-lg bg-background text-foreground"
                   />
                   <input
                     type="text"
                     value={ing.unit}
                     onChange={(e) => updateIngredient(idx, 'unit', e.target.value)}
                     placeholder="Unit"
-                    className="w-24 px-3 py-2 border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                    className="w-24 px-3 py-2 border rounded-lg bg-background text-foreground"
                   />
                   <input
                     type="text"
                     value={ing.item}
                     onChange={(e) => updateIngredient(idx, 'item', e.target.value)}
                     placeholder="Ingredient"
-                    className="flex-1 px-3 py-2 border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                    className="flex-1 px-3 py-2 border rounded-lg bg-background text-foreground"
                   />
                   {ingredients.length > 1 && (
                     <button
@@ -478,7 +499,7 @@ export default function AddRecipe() {
               <button
                 onClick={addInstruction}
                 type="button"
-                className="text-blue-600 hover:text-blue-700 text-sm flex items-center gap-1"
+                className="text-primary hover:text-primary/80 text-sm flex items-center gap-1"
               >
                 <Plus size={16} /> Add Step
               </button>
@@ -492,7 +513,7 @@ export default function AddRecipe() {
                     onChange={(e) => updateInstruction(idx, e.target.value)}
                     placeholder="Step instructions..."
                     rows={2}
-                    className="flex-1 px-3 py-2 border rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                    className="flex-1 px-3 py-2 border rounded-lg bg-background text-foreground"
                   />
                   {instructions.length > 1 && (
                     <button
@@ -513,7 +534,7 @@ export default function AddRecipe() {
               onClick={handleSaveManual}
               disabled={isSaving}
               type="button"
-              className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 disabled:bg-gray-400"
+              className="bg-primary text-primary-foreground px-6 py-2 rounded-lg hover:bg-primary/90 disabled:bg-gray-400"
             >
               {isSaving ? 'Saving...' : 'Save Recipe'}
             </button>
