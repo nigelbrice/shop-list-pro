@@ -88,6 +88,7 @@ export const recipes = pgTable('recipes', {
   
   // Nutrition metadata
   totalWeight: real('total_weight'), // total recipe weight in grams
+  servingSize: real('serving_size'), // calculated grams per serving
   calculatedAt: timestamp('calculated_at', { withTimezone: true }),
   nutritionBreakdown: jsonb('nutrition_breakdown'), // ingredient breakdown with sources
   

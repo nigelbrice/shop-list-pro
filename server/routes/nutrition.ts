@@ -77,8 +77,13 @@ router.post('/:id/calculate-nutrition', async (req, res) => {
     // Calculate nutrition
     const nutritionData = await calculateRecipeNutrition(ingredients, servings);
     
+    // Calculate serving size in grams
+    const servingSize = nutritionData.totalWeight / servings;
+    
     console.log('Nutrition calculation complete:', {
       totalWeight: nutritionData.totalWeight,
+      servings,
+      servingSize,
       perServing: nutritionData.perServing,
       sources: nutritionData.ingredientBreakdown.map(i => ({ name: i.name, source: i.source }))
     });
@@ -98,6 +103,7 @@ router.post('/:id/calculate-nutrition', async (req, res) => {
         carbsPerServing: nutritionData.perServing.carbs,
         
         totalWeight: nutritionData.totalWeight,
+        servingSize: servingSize,
         calculatedAt: new Date(),
         nutritionBreakdown: nutritionData.ingredientBreakdown as any, // Save the breakdown
       })
@@ -109,6 +115,7 @@ router.post('/:id/calculate-nutrition', async (req, res) => {
         per100g: nutritionData.per100g,
         perServing: nutritionData.perServing,
         totalWeight: nutritionData.totalWeight,
+        servingSize: servingSize,
         servings,
       },
       ingredientBreakdown: nutritionData.ingredientBreakdown,

@@ -412,6 +412,8 @@ export default function RecipeDetail() {
               fatPerServing: recipe.fatPerServing,
               carbsPerServing: recipe.carbsPerServing,
               totalWeight: recipe.totalWeight,
+              servingSize: recipe.servingSize,
+              servings: recipe.servings,
               calculatedAt: recipe.calculatedAt,
             }}
             variant="card"

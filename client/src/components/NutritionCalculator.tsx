@@ -17,6 +17,7 @@ interface NutritionData {
     carbs: number;
   };
   totalWeight: number;
+  servingSize: number;
   servings: number;
 }
 
@@ -42,6 +43,8 @@ interface NutritionCalculatorProps {
     fatPerServing?: number;
     carbsPerServing?: number;
     totalWeight?: number;
+    servingSize?: number;
+    servings?: number;
     calculatedAt?: string;
     nutritionBreakdown?: IngredientBreakdown[];
   };
@@ -189,6 +192,8 @@ export function NutritionCalculator({
       carbs: existingNutrition?.carbsPerServing || 0,
     },
     totalWeight: existingNutrition?.totalWeight || 0,
+    servingSize: existingNutrition?.servingSize || 0,
+    servings: existingNutrition?.servings || 0,
   };
 
   // Button variant (for edit page)
@@ -436,9 +441,9 @@ export function NutritionCalculator({
                 <div className="p-4 bg-muted rounded-lg border border-border">
                   <div className="flex justify-between items-baseline mb-3">
                     <h4 className="font-semibold text-foreground">Per Serving</h4>
-                    {displayNutrition.totalWeight > 0 && displayNutrition.servings > 0 && (
-                      <span className="text-xs text-muted-foreground">
-                        ~{Math.round(displayNutrition.totalWeight / displayNutrition.servings)}g per serving
+                    {displayNutrition.servingSize > 0 && (
+                      <span className="text-xs font-semibold text-primary">
+                        ~{Math.round(displayNutrition.servingSize)}g
                       </span>
                     )}
                   </div>
@@ -575,9 +580,9 @@ export function NutritionCalculator({
         <div className="p-4 bg-muted rounded-lg">
           <div className="flex justify-between items-baseline mb-3">
             <h3 className="font-semibold text-foreground">Per Serving</h3>
-            {displayNutrition.totalWeight > 0 && displayNutrition.servings > 0 && (
-              <span className="text-xs text-muted-foreground">
-                ~{Math.round(displayNutrition.totalWeight / displayNutrition.servings)}g per serving
+            {displayNutrition.servingSize > 0 && (
+              <span className="text-xs font-semibold text-primary">
+                ~{Math.round(displayNutrition.servingSize)}g
               </span>
             )}
           </div>
